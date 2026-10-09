@@ -1181,6 +1181,23 @@
       <div id="scheduleList"></div>
     </div>
   </section>
+  <section id="categories" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button class="mini-btn" data-tab="settings">← Back</button>
+      <div class="section-title">Category guide</div>
+    </div>
+    <div class="panel">
+      <div class="section-title mb-2">Maintenance categories</div>
+      <div class="record"><div class="record-title">Oil & filters</div><div class="hint">Oil changes, oil filter, air filter, cabin filter, fuel filter, and similar filter replacements.</div></div>
+      <div class="record"><div class="record-title">Tires</div><div class="hint">Tire changes, rotations, balancing, alignment, tire repairs, and seasonal tire swaps.</div></div>
+      <div class="record"><div class="record-title">Brakes</div><div class="hint">Brake pads, discs or rotors, brake fluid, calipers, brake inspections, and braking-system work.</div></div>
+      <div class="record"><div class="record-title">Inspection</div><div class="hint">Technical inspections, emissions checks, roadworthiness checks, and pre-trip inspections.</div></div>
+      <div class="record"><div class="record-title">Fluids</div><div class="hint">Coolant, transmission fluid, brake fluid, washer fluid, power steering fluid, differential oil, and other fluid top-ups or replacements.</div></div>
+      <div class="record"><div class="record-title">Battery</div><div class="hint">Battery replacement, charging issues, alternator or battery diagnostics, and related electrical checks.</div></div>
+      <div class="record"><div class="record-title">Repair</div><div class="hint">General mechanical or electrical repairs that do not fit a more specific maintenance category.</div></div>
+      <div class="record"><div class="record-title">Other</div><div class="hint">Anything that does not clearly belong elsewhere, such as accessories, cleaning, diagnostics, paperwork, or one-off maintenance.</div></div>
+    </div>
+  </section>
   <section id="serviceDetail" class="tab hidden">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <button id="detailBackBtn" class="mini-btn">← Back</button>
@@ -1212,6 +1229,11 @@
         </div>
         <button class="btn-mint w-100" type="submit">Save vehicle</button>
       </form>
+    </div>
+    <div class="panel mb-3">
+      <div class="section-title mb-2">Maintenance categories</div>
+      <p class="hint">See what each maintenance category is meant for.</p>
+      <button class="btn-outline-custom w-100" data-tab="categories">View category guide</button>
     </div>
     <div class="panel mb-3">
       <div class="section-title mb-3">Odometer history</div>
