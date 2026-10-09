@@ -529,6 +529,40 @@
     .part-details strong {
       color: #20272b
     }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px
+    }
+
+    .detail-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px;
+      min-width: 0
+    }
+
+    .detail-item small {
+      display: block;
+      color: var(--muted);
+      font-weight: 650;
+      margin-bottom: 4px
+    }
+
+    .detail-item strong {
+      display: block;
+      color: var(--text);
+      overflow-wrap: anywhere
+    }
+
+    .detail-notes {
+      margin-top: 16px;
+      line-height: 1.65;
+      white-space: pre-wrap
+    }
   </style>
   <style>
     /* Self-contained confirmation dialog for local iOS HTML viewers */
@@ -1002,6 +1036,10 @@
       .hero .stat strong {
         font-size: 17px
       }
+
+      .detail-grid {
+        grid-template-columns: 1fr
+      }
     }
 
     @media (max-width: 360px) {
@@ -1091,6 +1129,20 @@
     <div class="panel"><p class="hint">Items become due when their date arrives or the odometer reaches their target.
       Alerts appear when you open the app; iOS system notifications are not available.</p>
       <div id="scheduleList"></div>
+    </div>
+  </section>
+  <section id="serviceDetail" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button id="detailBackBtn" class="mini-btn">← Back</button>
+      <div id="detailTitle" class="section-title">Service details</div>
+    </div>
+    <div class="panel">
+      <div id="serviceDetailBody"></div>
+      <div class="divider"></div>
+      <div class="d-grid gap-2">
+        <button id="detailEditBtn" class="btn-mint">Edit service</button>
+        <button id="detailDeleteBtn" class="mini-btn danger">Delete service</button>
+      </div>
     </div>
   </section>
   <section id="settings" class="tab hidden">
@@ -1229,7 +1281,7 @@
       services: [],
       reminders: []
     });
-    let data = blank(), tab = 'dashboard', returnTab = 'dashboard';
+    let data = blank(), tab = 'dashboard', returnTab = 'dashboard', detailReturnTab = 'history', selectedServiceId = '';
     const parseNum = v => {
       if (v === null || v === undefined || String(v).trim() === '') return null;
       let s = String(v).trim().replace(/\s/g, '');
@@ -1243,11 +1295,24 @@
     };
     const money = n => new Intl.NumberFormat('de-DE', {style: 'currency', currency: 'EUR'}).format(n || 0);
     const num = n => new Intl.NumberFormat('de-DE', {maximumFractionDigits: 1}).format(n);
-    const fmtDate = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    }) : 'No date';
+    const uiDate = s => {
+      if (!s) return '';
+      const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return m ? m[2] + '.' + m[3] + '.' + m[1] : String(s)
+    };
+    const parseUiDate = s => {
+      const raw = String(s || '').trim();
+      if (!raw) return '';
+      let m = raw.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+      if (m) {
+        const mm = m[1].padStart(2, '0'), dd = m[2].padStart(2, '0'), yyyy = m[3];
+        const d = new Date(yyyy + '-' + mm + '-' + dd + 'T12:00:00');
+        return d.getFullYear() === Number(yyyy) && d.getMonth() + 1 === Number(mm) && d.getDate() === Number(dd) ? yyyy + '-' + mm + '-' + dd : null
+      }
+      m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return m ? raw : null
+    };
+    const fmtDate = s => s ? uiDate(s) : 'No date';
     const el = (tag, cls, txt) => {
       const e = document.createElement(tag);
       if (cls) e.className = cls;
@@ -1355,6 +1420,15 @@
       return 'planned'
     }
 
+    function deleteRecord(type, record, afterDelete = () => render()) {
+      askConfirm('This record will be permanently deleted.', () => {
+        data[type === 'service' ? 'services' : 'reminders'] = data[type === 'service' ? 'services' : 'reminders'].filter(x => x.id !== record.id);
+        persist();
+        afterDelete();
+        toast('Deleted')
+      }, {title: 'Delete record?', button: 'Delete'})
+    }
+
     function summary(r, type) {
       const wrap = el('div', 'record');
       const row = el('div', 'd-flex justify-content-between gap-2 align-items-start');
@@ -1384,17 +1458,15 @@
       } else row.append(el('strong', 'text-nowrap', money(r.cost)));
       wrap.append(row);
       const actions = el('div', 'd-flex gap-2 mt-2');
+      if (type === 'service') {
+        const view = el('button', 'mini-btn', 'View');
+        view.addEventListener('click', () => openServiceDetail(r.id));
+        actions.append(view)
+      }
       const edit = el('button', 'mini-btn', 'Edit');
       edit.addEventListener('click', () => openEditor(type, r));
       const del = el('button', 'mini-btn danger', 'Delete');
-      del.addEventListener('click', () => {
-        askConfirm('This record will be permanently deleted.', () => {
-          data[type === 'service' ? 'services' : 'reminders'] = data[type === 'service' ? 'services' : 'reminders'].filter(x => x.id !== r.id);
-          persist();
-          render();
-          toast('Deleted')
-        }, {title: 'Delete record?', button: 'Delete'})
-      });
+      del.addEventListener('click', () => deleteRecord(type, r));
       actions.append(edit, del);
       if (type === 'reminder') {
         const done = el('button', 'mini-btn', 'Mark done');
@@ -1429,6 +1501,62 @@
         return
       }
       items.forEach(x => node.append(summary(x, type)))
+    }
+
+    function detailItem(label, value) {
+      const item = el('div', 'detail-item');
+      item.append(el('small', '', label), el('strong', '', value || '-'));
+      return item
+    }
+
+    function openServiceDetail(serviceId) {
+      selectedServiceId = serviceId;
+      detailReturnTab = tab === 'serviceDetail' ? detailReturnTab : tab;
+      show('serviceDetail')
+    }
+
+    function renderServiceDetail() {
+      const service = data.services.find(x => x.id === selectedServiceId), body = $('serviceDetailBody');
+      body.replaceChildren();
+      if (!service) {
+        $('detailTitle').textContent = 'Service details';
+        body.append(el('div', 'empty', 'This service record no longer exists.'));
+        return
+      }
+      $('detailTitle').textContent = service.name || 'Service details';
+      const heading = el('div', '');
+      heading.append(el('div', 'pill', service.category || 'Service'), el('h2', 'section-title mt-3 mb-1', service.name || 'Service'));
+      if (service.notes) heading.append(el('div', 'hint', 'Notes included'));
+      const grid = el('div', 'detail-grid');
+      grid.append(
+        detailItem('Service date', fmtDate(service.date)),
+        detailItem('Odometer', service.km !== null && service.km !== '' && service.km !== undefined ? num(Number(service.km)) + ' km' : '-'),
+        detailItem('Cost', money(service.cost)),
+        detailItem('Workshop', service.shop || '-')
+      );
+      body.append(heading, grid);
+      if (service.notes) {
+        body.append(el('div', 'divider'));
+        body.append(el('div', 'section-title mb-2', 'Notes'), el('div', 'detail-notes', service.notes))
+      }
+      if (Array.isArray(service.parts) && service.parts.length) {
+        body.append(el('div', 'divider'));
+        body.append(el('div', 'section-title mb-2', 'Purchased parts'));
+        service.parts.forEach((p, i) => {
+          const part = el('div', 'part-details');
+          part.append(el('strong', '', (i + 1) + '. ' + (p.name || 'Unnamed part')));
+          const grid = el('div', 'detail-grid');
+          grid.append(
+            detailItem('Brand / model', p.model || '-'),
+            detailItem('Shop', p.shop || '-'),
+            detailItem('Purchase date', p.purchaseDate ? fmtDate(p.purchaseDate) : '-'),
+            detailItem('Paid price', p.discountedPrice !== '' && p.discountedPrice != null ? money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? money(parseNum(p.originalPrice)) : '-')
+          );
+          part.append(grid);
+          if (p.notes) part.append(el('div', 'detail-notes', p.notes));
+          body.append(part)
+        })
+      }
     }
 
     function renderOdometerHistory() {
@@ -1496,7 +1624,8 @@
       const q = $('searchHistory').value.toLowerCase(), cat = $('categoryFilter').value;
       fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.category, ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
       fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.');
-      renderOdometerHistory()
+      renderOdometerHistory();
+      renderServiceDetail()
     }
 
     function fillVehicle() {
@@ -1591,6 +1720,18 @@
     $('newService').onclick = $('newService2').onclick = () => openEditor('service');
     $('newReminder').onclick = $('newReminder2').onclick = () => openEditor('reminder');
     $('backBtn').onclick = () => show(returnTab);
+    $('detailBackBtn').onclick = () => show(detailReturnTab);
+    $('detailEditBtn').onclick = () => {
+      const service = data.services.find(x => x.id === selectedServiceId);
+      if (service) openEditor('service', service)
+    };
+    $('detailDeleteBtn').onclick = () => {
+      const service = data.services.find(x => x.id === selectedServiceId);
+      if (service) deleteRecord('service', service, () => {
+        selectedServiceId = '';
+        show('history')
+      })
+    };
     $('searchHistory').addEventListener('input', render);
     $('categoryFilter').addEventListener('change', render);
     $('vehicleForm').addEventListener('submit', e => {
@@ -1607,16 +1748,18 @@
       e.preventDefault();
       const kmRaw = $('odoKm').value.trim(), km = parseNum(kmRaw);
       if (km === null) return toast('Enter a valid odometer');
+      const odoDate = parseUiDate($('odoDate').value);
+      if (!odoDate) return toast('Enter a valid date');
       data.odometerReadings = data.odometerReadings || [];
       const existingId = $('odoId').value;
       if (existingId) {
         const existing = data.odometerReadings.find(x => x.id === existingId);
         if (existing) {
-          existing.date = $('odoDate').value || today();
+          existing.date = odoDate;
           existing.km = km
         }
       } else {
-        data.odometerReadings.push({id: id(), date: $('odoDate').value || today(), km, createdAt: new Date().toISOString()})
+        data.odometerReadings.push({id: id(), date: odoDate, km, createdAt: new Date().toISOString()})
       }
       persist();
       resetOdoForm();
@@ -1629,20 +1772,26 @@
       const type = $('entryType').value;
       const kmRaw = $('entryKm').value.trim(), costRaw = $('entryCost').value.trim(), km = parseNum(kmRaw),
         cost = parseNum(costRaw);
+      const entryDateRaw = $('entryDate').value.trim(), entryDate = parseUiDate(entryDateRaw);
       if (kmRaw && km === null) return toast('Enter a valid mileage');
       if (type === 'service' && costRaw && cost === null) return toast('Enter a valid cost');
-      if (type === 'reminder' && !$('entryDate').value && km === null) return toast('Enter a target date or mileage');
+      if (type === 'service' && !entryDate) return toast('Enter a valid service date');
+      if (type === 'reminder' && entryDateRaw && !entryDate) return toast('Enter a valid target date');
+      if (type === 'reminder' && !entryDateRaw && km === null) return toast('Enter a target date or mileage');
       const r = {
         id: $('entryId').value || id(),
         name: $('entryName').value.trim(),
         category: $('entryCategory').value,
-        date: $('entryDate').value,
+        date: entryDate,
         km,
         notes: $('entryNotes').value.trim()
       };
       if (type === 'service') {
         for (const p of editorParts) {
           if (!p.name.trim()) return toast('Enter a name for every part');
+          const purchaseDate = parseUiDate(p.purchaseDate);
+          if (p.purchaseDate && !purchaseDate) return toast('Enter valid part purchase dates');
+          p.purchaseDate = purchaseDate;
           for (const k of ['originalPrice', 'discountedPrice']) {
             if (p[k] !== '' && parseNum(p[k]) === null) return toast('Check part prices: use a number')
           }
@@ -1656,7 +1805,7 @@
       const idx = data[key].findIndex(x => x.id === r.id);
       if (idx < 0) data[key].push(r); else data[key][idx] = r;
       persist();
-      show(type === 'service' ? 'history' : 'schedule');
+      show(type === 'service' && returnTab === 'serviceDetail' ? 'serviceDetail' : type === 'service' ? 'history' : 'schedule');
       toast('Saved successfully')
     });
 
