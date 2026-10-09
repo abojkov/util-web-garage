@@ -558,6 +558,16 @@
       overflow-wrap: anywhere
     }
 
+    .detail-subtext {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap
+    }
+
     .detail-notes {
       margin-top: 16px;
       line-height: 1.65;
@@ -1567,6 +1577,12 @@
       return item
     }
 
+    function workshopDetailItem(service) {
+      const item = detailItem('Workshop', service.workshop || service.shop || '-');
+      if (service.workshopAddress) item.append(el('span', 'detail-subtext', service.workshopAddress));
+      return item
+    }
+
     function openServiceDetail(serviceId) {
       selectedServiceId = serviceId;
       detailReturnTab = tab === 'serviceDetail' ? detailReturnTab : tab;
@@ -1590,8 +1606,7 @@
         detailItem('Service date', fmtDate(service.date)),
         detailItem('Odometer', service.km !== null && service.km !== '' && service.km !== undefined ? num(Number(service.km)) + ' km' : '-'),
         detailItem('Final cost', money(serviceTotal(service))),
-        detailItem('Workshop', service.workshop || service.shop || '-'),
-        detailItem('Workshop address', service.workshopAddress || '-')
+        workshopDetailItem(service)
       );
       const costs = el('div', 'cost-breakdown');
       [['Workshop cost', money(parseNum(service.workshopCost) || 0)], ['Parts total', money(partsTotal(service.parts))], ['Delivery fees', money(deliveryTotal(service))]].forEach(([label, value]) => {
