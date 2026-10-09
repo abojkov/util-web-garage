@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0c1218">
-  <title>Garage — Car Maintenance</title>
+  <meta name="theme-color" content="#e8ecef">
+  <title>Garage - Car Maintenance</title>
   <link rel="stylesheet" href="bootstrap.min.css">
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0c1218;
-      --surface: #151e26;
-      --surface2: #1c2932;
-      --border: #2a3943;
-      --text: #eff9f7;
-      --muted: #94a8ae;
-      --mint: #8df0c9;
-      --orange: #ffc68b
+      color-scheme: light;
+      --bg: #e8ecef;
+      --surface: #f8faf9;
+      --surface2: #eef2f1;
+      --border: #cbd3d6;
+      --text: #20272b;
+      --muted: #65747a;
+      --mint: #3fc494;
+      --orange: #b66a22
     }
 
     * {
@@ -67,8 +67,8 @@
     }
 
     .hero {
-      background: linear-gradient(135deg, #203c3b, #14232b 75%);
-      border: 1px solid #31554c
+      background: linear-gradient(135deg, #f7faf8, #e3ebe8 75%);
+      border: 1px solid #bfd2ca
     }
 
     .stat {
@@ -90,7 +90,7 @@
 
     .btn-mint {
       background: var(--mint);
-      color: #09251e;
+      color: #0d2a22;
       border: 0;
       font-weight: 800;
       border-radius: 13px;
@@ -98,36 +98,36 @@
     }
 
     .btn-mint:hover {
-      background: #b3ffdf;
-      color: #09251e
+      background: #6dd9b2;
+      color: #0d2a22
     }
 
     .btn-outline-custom {
-      background: #1d2a32;
-      border: 1px solid #40515a;
-      color: #e5f5f0;
+      background: #f4f6f6;
+      border: 1px solid #b8c3c7;
+      color: #273237;
       border-radius: 12px;
       padding: 10px 14px
     }
 
     .form-control, .form-select {
-      background: #0f1921 !important;
-      border: 1px solid #3a4b55 !important;
-      color: #f1faf7 !important;
+      background: #ffffff !important;
+      border: 1px solid #bdc8cc !important;
+      color: #20272b !important;
       border-radius: 12px;
       padding: 12px
     }
 
     .form-control:focus, .form-select:focus {
-      box-shadow: 0 0 0 2px #8df0c933 !important
+      box-shadow: 0 0 0 3px #3fc49433 !important
     }
 
     .form-control::placeholder {
-      color: #71858b
+      color: #8a989d
     }
 
     .form-label {
-      color: #b5c8ca;
+      color: #415057;
       font-size: 13px;
       font-weight: 650
     }
@@ -143,18 +143,18 @@
       padding: 5px 10px;
       font-size: 11px;
       font-weight: 750;
-      background: #253840;
-      color: #d0e3df
+      background: #dce5e3;
+      color: #354347
     }
 
     .pill.due {
-      background: #513b2d;
-      color: #ffd0a1
+      background: #ffe3c4;
+      color: #85521e
     }
 
     .pill.overdue {
-      background: #4a2a32;
-      color: #ffb3bf
+      background: #ffdfe4;
+      color: #9d3747
     }
 
     .record {
@@ -171,16 +171,16 @@
     }
 
     .mini-btn {
-      border: 1px solid #41535b;
+      border: 1px solid #b9c4c8;
       border-radius: 9px;
       background: transparent;
-      color: #d6e8e3;
+      color: #304047;
       padding: 6px 10px;
       font-size: 12px
     }
 
     .danger {
-      color: #ffb3bf
+      color: #b13d50
     }
 
     .navtabs {
@@ -194,7 +194,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       background: var(--surface);
-      color: #a7bdc0;
+      color: #516269;
       padding: 10px 15px;
       font-weight: 700;
       white-space: nowrap
@@ -202,7 +202,7 @@
 
     .navtabs button.active {
       background: var(--mint);
-      color: #09251e
+      color: #0d2a22
     }
 
     .hidden {
@@ -226,18 +226,18 @@
       left: 50%;
       transform: translateX(-50%);
       max-width: 90vw;
-      background: #8df0c9;
-      color: #09251e;
+      background: #3fc494;
+      color: #0d2a22;
       border-radius: 14px;
       padding: 11px 17px;
       font-weight: 700;
       z-index: 100;
-      box-shadow: 0 8px 30px #0008
+      box-shadow: 0 8px 30px #7b8a9155
     }
 
     .form-check-input {
-      background-color: #13232a;
-      border-color: #4e6569
+      background-color: #ffffff;
+      border-color: #b8c3c7
     }
 
     .divider {
@@ -247,7 +247,7 @@
     }
 
     input[type=date] {
-      color-scheme: dark
+      color-scheme: light
     }
 
     button:focus-visible {
@@ -372,16 +372,16 @@
       }
     }
 
-    /* Nested purchased parts — all layouts are single-column and iPhone-safe */
+    /* Nested purchased parts - all layouts are single-column and iPhone-safe */
     #partsSection {
       display: block !important;
       width: 100%;
       min-width: 0;
       margin: 10px 0 0 !important;
       padding: 20px 16px;
-      border: 1px solid #354954;
+      border: 1px solid #cbd6d9;
       border-radius: 20px;
-      background: #101d26;
+      background: #eef3f2;
       box-sizing: border-box
     }
 
@@ -393,7 +393,7 @@
 
     #partsSection .parts-hint {
       font-size: 13px;
-      color: #9eafb8;
+      color: #66767c;
       line-height: 1.5;
       margin-bottom: 16px
     }
@@ -406,8 +406,8 @@
     }
 
     .part-card {
-      border: 1px solid #38505c;
-      background: #172630;
+      border: 1px solid #c7d1d4;
+      background: #ffffff;
       border-radius: 16px;
       padding: 16px;
       min-width: 0;
@@ -443,7 +443,7 @@
       display: block;
       font-size: 13px;
       font-weight: 650;
-      color: #b7c6cd;
+      color: #46555b;
       margin-bottom: 8px
     }
 
@@ -453,10 +453,10 @@
       width: 100% !important;
       min-width: 0 !important;
       max-width: 100% !important;
-      border: 1px solid #415764;
+      border: 1px solid #bdc8cc;
       border-radius: 13px;
-      background: #0e1a23;
-      color: #f0faf7;
+      background: #ffffff;
+      color: #20272b;
       padding: 13px 14px;
       font: inherit;
       font-size: 16px;
@@ -488,9 +488,9 @@
     }
 
     .part-remove {
-      border: 1px solid #73505b;
+      border: 1px solid #e0a7b1;
       background: transparent;
-      color: #ffb7bd;
+      color: #ad394d;
       border-radius: 10px;
       padding: 8px 11px;
       font: inherit;
@@ -504,7 +504,7 @@
 
     #partsTotals {
       margin-top: 15px;
-      color: #b7c6cd;
+      color: #526269;
       font-size: 14px;
       line-height: 1.7
     }
@@ -513,16 +513,16 @@
       margin-top: 12px;
       padding: 13px;
       border-radius: 12px;
-      background: #101d26;
-      border: 1px solid #2b424d;
+      background: #f3f6f5;
+      border: 1px solid #cad4d7;
       font-size: 13px;
       line-height: 1.65;
-      color: #bbccd3;
+      color: #4f5f66;
       overflow-wrap: anywhere
     }
 
     .part-details strong {
-      color: #effaf6
+      color: #20272b
     }
   </style>
   <style>
@@ -531,7 +531,7 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background: rgba(3, 9, 14, .78);
+      background: rgba(32, 39, 43, .35);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -546,12 +546,12 @@
     .garage-dialog {
       width: 100%;
       max-width: 390px;
-      background: #19262e;
-      color: #f0faf8;
-      border: 1px solid #3c565c;
+      background: #ffffff;
+      color: #20272b;
+      border: 1px solid #c7d1d4;
       border-radius: 24px;
       padding: 25px 22px;
-      box-shadow: 0 20px 70px #0009
+      box-shadow: 0 20px 70px #7b8a9170
     }
 
     .garage-dialog h2 {
@@ -561,7 +561,7 @@
     }
 
     .garage-dialog p {
-      color: #b4c5c8;
+      color: #65747a;
       line-height: 1.5;
       margin: 0 0 24px
     }
@@ -577,17 +577,17 @@
       border-radius: 13px;
       font-size: 16px;
       font-weight: 700;
-      border: 1px solid #465e63
+      border: 1px solid #b8c3c7
     }
 
     .garage-cancel {
-      background: #26343d;
-      color: #e6f0f0
+      background: #edf1f1;
+      color: #273237
     }
 
     .garage-accept {
       background: #fa8484;
-      color: #182128;
+      color: #20272b;
       border-color: #fa8484 !important
     }
 
@@ -690,7 +690,7 @@
       }
     }
 
-    /* v1.4 — consistent mobile layout, no dependency on Bootstrap utility loading */
+    /* v1.4 - consistent mobile layout, no dependency on Bootstrap utility loading */
     html {
       width: 100%;
       overflow-x: hidden;
@@ -1025,7 +1025,7 @@
     </div>
     <div class="row g-2 mt-3">
       <div class="col-6">
-        <div class="stat"><small>Odometer</small><strong id="odoStat">—</strong></div>
+        <div class="stat"><small>Odometer</small><strong id="odoStat">-</strong></div>
       </div>
       <div class="col-6">
         <div class="stat"><small>Total service spend</small><strong id="spendStat">€0.00</strong></div>
@@ -1394,7 +1394,7 @@
       $('vehicleTitle').textContent = v.name || 'My Car';
       $('vehicleSubtitle').textContent = (v.year ? v.year + ' · ' : '') + 'Maintenance overview';
       const odo = parseNum(v.odometer);
-      $('odoStat').textContent = odo === null ? '—' : num(odo) + ' km';
+      $('odoStat').textContent = odo === null ? '-' : num(odo) + ' km';
       $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + (parseNum(s.cost) || 0), 0));
       const sorted = [...data.services].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       const reminders = [...data.reminders].sort((a, b) => {
@@ -1568,7 +1568,7 @@
         ...data,
         exportedAt: new Date().toISOString()
       }, null, 2), 'application/json');
-      toast('Backup prepared — save it in Files')
+      toast('Backup prepared - save it in Files')
     };
     $('importBtn').onclick = () => $('importFile').click();
     $('importFile').addEventListener('change', async e => {
