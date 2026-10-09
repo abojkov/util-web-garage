@@ -570,6 +570,12 @@
       overflow-wrap: anywhere
     }
 
+    .detail-item del {
+      color: var(--muted);
+      font-weight: 400;
+      margin-right: 8px
+    }
+
     .detail-subtext {
       display: block;
       margin-top: 5px;
@@ -1213,7 +1219,7 @@
   <header class="d-flex justify-content-between align-items-center mb-4">
     <div class="brand"><img class="brand-logo" src="logo.png" alt="">garage<span>.</span></div>
     <span class="pill">● OFFLINE FIRST</span></header>
-  <section class="panel hero mb-3">
+  <section id="vehicleHeader" class="panel hero mb-3">
     <div class="eyebrow mb-2">YOUR VEHICLE</div>
     <div class="d-flex justify-content-between align-items-start gap-2">
       <div><h1 id="vehicleTitle" class="h4 fw-bold mb-1">My Car</h1>
@@ -1609,6 +1615,8 @@
 
     function show(t) {
       tab = t;
+      const isMainPage = ['dashboard', 'history', 'schedule', 'settings'].includes(t);
+      $('vehicleHeader').classList.toggle('hidden', !isMainPage);
       document.querySelectorAll('.tab').forEach(e => e.classList.toggle('hidden', e.id !== t));
       document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
       if (t === 'settings') fillVehicle();
@@ -1726,6 +1734,20 @@
       return item
     }
 
+    function paidPriceDetailItem(part) {
+      const original = parseNum(part.originalPrice);
+      const paid = parseNum(part.discountedPrice);
+      const price = paid ?? original;
+      const item = detailItem('Paid price', price === null ? '-' : money(price));
+      if (original !== null && paid !== null) {
+        item.querySelector('strong').replaceChildren(
+          el('del', '', money(original)),
+          document.createTextNode(' ' + money(paid))
+        )
+      }
+      return item
+    }
+
     function openServiceDetail(serviceId) {
       selectedServiceId = serviceId;
       detailReturnTab = tab === 'serviceDetail' ? detailReturnTab : tab;
@@ -1773,7 +1795,7 @@
             detailItem('Brand / model', p.model || '-'),
             detailItem('Shop', p.shop || '-'),
             detailItem('Purchase date', p.purchaseDate ? fmtDate(p.purchaseDate) : '-'),
-            detailItem('Paid price', p.discountedPrice !== '' && p.discountedPrice != null ? money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? money(parseNum(p.originalPrice)) : '-')
+          paidPriceDetailItem(p)
           );
           part.append(grid);
           if (p.notes) part.append(el('div', 'detail-notes', p.notes));
