@@ -1571,14 +1571,14 @@
     const uiDate = s => {
       if (!s) return '';
       const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      return m ? m[2] + '.' + m[3] + '.' + m[1] : String(s)
+      return m ? m[3] + '.' + m[2] + '.' + m[1] : String(s)
     };
     const parseUiDate = s => {
       const raw = String(s || '').trim();
       if (!raw) return '';
       let m = raw.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
       if (m) {
-        const mm = m[1].padStart(2, '0'), dd = m[2].padStart(2, '0'), yyyy = m[3];
+        const dd = m[1].padStart(2, '0'), mm = m[2].padStart(2, '0'), yyyy = m[3];
         const d = new Date(yyyy + '-' + mm + '-' + dd + 'T12:00:00');
         return d.getFullYear() === Number(yyyy) && d.getMonth() + 1 === Number(mm) && d.getDate() === Number(dd) ? yyyy + '-' + mm + '-' + dd : null
       }
