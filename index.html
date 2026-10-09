@@ -305,43 +305,43 @@
       margin-top: 20px;
     }
 
-    #vehicleForm {
+    #vehicleForm, #odoForm {
       display: flex;
       flex-direction: column;
       gap: 17px;
     }
 
-    #vehicleForm .row {
+    #vehicleForm .row, #odoForm .row {
       display: flex;
       flex-direction: column;
       gap: 17px;
       margin: 0;
     }
 
-    #vehicleForm .row > div {
+    #vehicleForm .row > div, #odoForm .row > div {
       width: 100%;
       max-width: none;
       padding: 0;
       margin: 0 !important;
     }
 
-    #vehicleForm > div {
+    #vehicleForm > div, #odoForm > div {
       margin: 0 !important;
     }
 
-    #vehicleForm .form-label {
+    #vehicleForm .form-label, #odoForm .form-label {
       display: block;
       margin: 0 0 8px;
     }
 
-    #vehicleForm .form-control {
+    #vehicleForm .form-control, #odoForm .form-control {
       display: block;
       width: 100%;
       min-width: 0;
       min-height: 48px;
     }
 
-    #vehicleForm .btn-mint {
+    #vehicleForm .btn-mint, #odoForm .btn-mint {
       width: 100%;
       margin-top: 4px;
     }
@@ -826,7 +826,7 @@
       margin: 0 0 20px !important
     }
 
-    #vehicleForm, #entryForm {
+    #vehicleForm, #odoForm, #entryForm {
       display: flex !important;
       flex-direction: column !important;
       gap: 22px !important;
@@ -834,13 +834,13 @@
       width: 100%
     }
 
-    #vehicleForm > div, #entryForm > div {
+    #vehicleForm > div, #odoForm > div, #entryForm > div {
       margin: 0 !important;
       width: 100%;
       min-width: 0
     }
 
-    #vehicleForm .row, #entryForm .row, #entryForm #serviceFields .row {
+    #vehicleForm .row, #odoForm .row, #entryForm .row, #entryForm #serviceFields .row {
       display: flex !important;
       flex-direction: column !important;
       gap: 22px !important;
@@ -848,7 +848,7 @@
       width: 100%
     }
 
-    #vehicleForm .row > div, #entryForm .row > div, #entryForm #serviceFields .row > div {
+    #vehicleForm .row > div, #odoForm .row > div, #entryForm .row > div, #entryForm #serviceFields .row > div {
       width: 100% !important;
       min-width: 0 !important;
       max-width: 100% !important;
@@ -857,7 +857,7 @@
       margin: 0 !important
     }
 
-    #vehicleForm .form-label, #entryForm .form-label {
+    #vehicleForm .form-label, #odoForm .form-label, #entryForm .form-label {
       display: block !important;
       width: 100%;
       font-size: 14px;
@@ -866,7 +866,7 @@
       margin: 0 0 10px !important
     }
 
-    #vehicleForm .form-control, #entryForm .form-control, #entryForm .form-select {
+    #vehicleForm .form-control, #odoForm .form-control, #entryForm .form-control, #entryForm .form-select {
       display: block !important;
       box-sizing: border-box !important;
       width: 100% !important;
@@ -932,7 +932,7 @@
       display: none !important
     }
 
-    #vehicleForm .btn-mint, #entryForm .btn-mint {
+    #vehicleForm .btn-mint, #odoForm .btn-mint, #entryForm .btn-mint {
       width: 100% !important;
       min-height: 54px;
       margin: 4px 0 0 !important
@@ -1107,11 +1107,25 @@
                                                                                              id="carYear"
                                                                                              inputmode="numeric"
                                                                                              placeholder="2016"></div>
-          <div class="col-6 mb-3"><label class="form-label" for="carOdo">Odometer (km)</label><input
-              class="form-control" id="carOdo" inputmode="decimal" placeholder="125000"></div>
         </div>
         <button class="btn-mint w-100" type="submit">Save vehicle</button>
       </form>
+    </div>
+    <div class="panel mb-3">
+      <div class="section-title mb-3">Odometer history</div>
+      <form id="odoForm">
+        <input id="odoId" type="hidden">
+        <div class="row g-2">
+          <div class="col-6 mb-3"><label class="form-label" for="odoDate">Reading date</label><input
+              class="form-control" id="odoDate" type="date" required></div>
+          <div class="col-6 mb-3"><label class="form-label" for="odoKm">Odometer (km)</label><input
+              class="form-control" id="odoKm" inputmode="decimal" placeholder="125000" required></div>
+        </div>
+        <button class="btn-mint w-100" id="odoSubmit" type="submit">Add odometer reading</button>
+        <button class="btn-outline-custom hidden" id="odoCancel" type="button">Cancel edit</button>
+      </form>
+      <div class="divider"></div>
+      <div id="odoList"></div>
     </div>
     <div class="panel mb-3">
       <div class="section-title mb-2">Backup your data</div>
@@ -1210,7 +1224,8 @@
     const $ = id => document.getElementById(id);
     const today = () => new Date().toLocaleDateString('en-CA');
     const blank = () => ({
-      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016', odometer: ''},
+      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016'},
+      odometerReadings: [],
       services: [],
       reminders: []
     });
@@ -1240,6 +1255,8 @@
       return e
     };
     const id = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const sortedOdo = () => [...(data.odometerReadings || [])].sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const latestOdo = () => sortedOdo()[0] || null;
 
     function toast(s) {
       $('toast').textContent = s;
@@ -1289,13 +1306,33 @@
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const v = JSON.parse(raw);
-        if (valid(v)) data = v
+        if (valid(v)) data = migrate(v)
       }
     } catch (e) {
     }
 
     function valid(v) {
-      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
+      const odoOk = !('odometerReadings' in v) || (Array.isArray(v.odometerReadings) && v.odometerReadings.length < 10000 && v.odometerReadings.every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.date === 'string' && parseNum(x.km) !== null));
+      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && odoOk && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
+    }
+
+    function migrate(v) {
+      const next = {
+        vehicle: {name: v.vehicle.name || '', year: v.vehicle.year || ''},
+        odometerReadings: Array.isArray(v.odometerReadings) ? v.odometerReadings.map(x => ({
+          id: x.id,
+          date: x.date,
+          km: parseNum(x.km),
+          createdAt: x.createdAt || ''
+        })) : [],
+        services: v.services,
+        reminders: v.reminders
+      };
+      const oldOdo = parseNum(v.vehicle.odometer);
+      if (oldOdo !== null && !next.odometerReadings.length) {
+        next.odometerReadings.push({id: id(), date: today(), km: oldOdo, createdAt: new Date().toISOString()})
+      }
+      return next
     }
 
     function show(t) {
@@ -1310,7 +1347,7 @@
     document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
 
     function status(r) {
-      const km = parseNum(data.vehicle.odometer), target = parseNum(r.km);
+      const reading = latestOdo(), km = reading ? parseNum(reading.km) : null, target = parseNum(r.km);
       const days = r.date ? Math.ceil((new Date(r.date + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 86400000) : null;
       const left = target !== null && km !== null ? target - km : null;
       if ((days !== null && days < 0) || (left !== null && left < 0)) return 'overdue';
@@ -1368,7 +1405,7 @@
               name: r.name,
               category: r.category,
               date: today(),
-              km: parseNum(data.vehicle.odometer),
+              km: latestOdo()?.km ?? null,
               cost: 0,
               shop: '',
               notes: r.notes || ''
@@ -1394,11 +1431,57 @@
       items.forEach(x => node.append(summary(x, type)))
     }
 
+    function renderOdometerHistory() {
+      const list = $('odoList'), readings = sortedOdo();
+      list.replaceChildren();
+      if (!readings.length) {
+        list.append(el('div', 'empty', 'No odometer readings yet.'));
+        return
+      }
+      readings.forEach(r => {
+        const wrap = el('div', 'record');
+        const row = el('div', 'd-flex justify-content-between gap-2 align-items-start');
+        const left = el('div', 'flex-grow-1');
+        left.append(el('div', 'record-title', num(r.km) + ' km'), el('div', 'hint', fmtDate(r.date)));
+        const actions = el('div', 'd-flex gap-2');
+        const edit = el('button', 'mini-btn', 'Edit');
+        edit.addEventListener('click', () => {
+          $('odoId').value = r.id;
+          $('odoDate').value = r.date;
+          $('odoKm').value = r.km;
+          $('odoSubmit').textContent = 'Save odometer reading';
+          $('odoCancel').classList.remove('hidden');
+          $('odoKm').focus()
+        });
+        const del = el('button', 'mini-btn danger', 'Delete');
+        del.addEventListener('click', () => {
+          askConfirm('This odometer reading will be permanently deleted.', () => {
+            data.odometerReadings = (data.odometerReadings || []).filter(x => x.id !== r.id);
+            persist();
+            render();
+            toast('Odometer reading deleted')
+          }, {title: 'Delete reading?', button: 'Delete'})
+        });
+        actions.append(edit, del);
+        row.append(left, actions);
+        wrap.append(row);
+        list.append(wrap)
+      })
+    }
+
+    function resetOdoForm() {
+      $('odoId').value = '';
+      $('odoDate').value = today();
+      $('odoKm').value = '';
+      $('odoSubmit').textContent = 'Add odometer reading';
+      $('odoCancel').classList.add('hidden')
+    }
+
     function render() {
       const v = data.vehicle;
       $('vehicleTitle').textContent = v.name || 'My Car';
       $('vehicleSubtitle').textContent = (v.year ? v.year + ' · ' : '') + 'Maintenance overview';
-      const odo = parseNum(v.odometer);
+      const latestReading = latestOdo(), odo = latestReading ? parseNum(latestReading.km) : null;
       $('odoStat').textContent = odo === null ? '-' : num(odo) + ' km';
       $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + (parseNum(s.cost) || 0), 0));
       const sorted = [...data.services].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -1412,14 +1495,15 @@
       fillList($('dashboardRecent'), sorted.slice(0, 3), 'service', 'No service records yet.');
       const q = $('searchHistory').value.toLowerCase(), cat = $('categoryFilter').value;
       fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.category, ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
-      fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.')
+      fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.');
+      renderOdometerHistory()
     }
 
     function fillVehicle() {
       const v = data.vehicle;
       $('carName').value = v.name || '';
       $('carYear').value = v.year || '';
-      $('carOdo').value = v.odometer ?? ''
+      resetOdoForm()
     }
 
     let editorParts = [];
@@ -1511,17 +1595,35 @@
     $('categoryFilter').addEventListener('change', render);
     $('vehicleForm').addEventListener('submit', e => {
       e.preventDefault();
-      const odo = $('carOdo').value.trim(), parsed = parseNum(odo);
-      if (odo && parsed === null) return toast('Enter a valid odometer');
       data.vehicle = {
         name: $('carName').value.trim(),
-        year: $('carYear').value.trim(),
-        odometer: parsed === null ? '' : parsed
+        year: $('carYear').value.trim()
       };
       persist();
       render();
       toast('Vehicle saved')
     });
+    $('odoForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const kmRaw = $('odoKm').value.trim(), km = parseNum(kmRaw);
+      if (km === null) return toast('Enter a valid odometer');
+      data.odometerReadings = data.odometerReadings || [];
+      const existingId = $('odoId').value;
+      if (existingId) {
+        const existing = data.odometerReadings.find(x => x.id === existingId);
+        if (existing) {
+          existing.date = $('odoDate').value || today();
+          existing.km = km
+        }
+      } else {
+        data.odometerReadings.push({id: id(), date: $('odoDate').value || today(), km, createdAt: new Date().toISOString()})
+      }
+      persist();
+      resetOdoForm();
+      render();
+      toast(existingId ? 'Odometer reading saved' : 'Odometer reading added')
+    });
+    $('odoCancel').addEventListener('click', resetOdoForm);
     $('entryForm').addEventListener('submit', e => {
       e.preventDefault();
       const type = $('entryType').value;
@@ -1584,7 +1686,7 @@
         const incoming = JSON.parse(await file.text());
         if (!valid(incoming)) throw Error('Not a valid Garage backup');
         askConfirm('This will replace your existing records. Export your current data first.', () => {
-          data = {vehicle: incoming.vehicle, services: incoming.services, reminders: incoming.reminders};
+          data = migrate(incoming);
           persist();
           show('dashboard');
           toast('Backup imported')
@@ -1602,7 +1704,7 @@
       toast('CSV prepared')
     };
     $('clearBtn').onclick = () => {
-      askConfirm('This permanently removes your vehicle, service history and reminders from this browser. Export a JSON backup first.', () => {
+      askConfirm('This permanently removes your vehicle, odometer history, service history and reminders from this browser. Export a JSON backup first.', () => {
         data = blank();
         persist();
         show('dashboard');
