@@ -580,6 +580,18 @@
       white-space: pre-wrap
     }
 
+    .plate-row {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 10px;
+      align-items: end
+    }
+
+    .plate-country input {
+      text-transform: uppercase;
+      text-align: center
+    }
+
     .detail-notes {
       margin-top: 16px;
       line-height: 1.65;
@@ -1253,6 +1265,16 @@
                                                                                              inputmode="numeric"
                                                                                              placeholder="2016"></div>
         </div>
+        <div class="mb-3"><label class="form-label" for="carPlate">Registration plate</label>
+          <div class="plate-row">
+            <div class="plate-country"><input class="form-control" id="carPlateCountry" placeholder="BG"
+                                              aria-label="Plate country code" maxlength="4"></div>
+            <input class="form-control" id="carPlate" placeholder="AB 1234 CD" maxlength="30">
+          </div>
+        </div>
+        <div class="mb-3"><label class="form-label" for="carVin">VIN</label><input class="form-control" id="carVin"
+                                                                                   placeholder="17-character VIN"
+                                                                                   maxlength="17"></div>
         <button class="btn-mint w-100" type="submit">Save vehicle</button>
       </form>
     </div>
@@ -1385,7 +1407,7 @@
     const $ = id => document.getElementById(id);
     const today = () => new Date().toLocaleDateString('en-CA');
     const blank = () => ({
-      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016'},
+      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016', plateCountry: '', plate: '', vin: ''},
       odometerReadings: [],
       services: [],
       reminders: []
@@ -1495,7 +1517,7 @@
 
     function migrate(v) {
       const next = {
-        vehicle: {name: v.vehicle.name || '', year: v.vehicle.year || ''},
+        vehicle: {name: v.vehicle.name || '', year: v.vehicle.year || '', plateCountry: v.vehicle.plateCountry || '', plate: v.vehicle.plate || '', vin: v.vehicle.vin || ''},
         odometerReadings: Array.isArray(v.odometerReadings) ? v.odometerReadings.map(x => ({
           id: x.id,
           date: x.date,
@@ -1736,7 +1758,8 @@
     function render() {
       const v = data.vehicle;
       $('vehicleTitle').textContent = v.name || 'My Car';
-      $('vehicleSubtitle').textContent = (v.year ? v.year + ' · ' : '') + 'Maintenance overview';
+      const plate = [v.plateCountry, v.plate].filter(Boolean).join(' ');
+      $('vehicleSubtitle').textContent = [v.year, plate, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(' · ') || 'Maintenance overview';
       const latestReading = latestOdo(), odo = latestReading ? parseNum(latestReading.km) : null;
       $('odoStat').textContent = odo === null ? '-' : num(odo) + ' km';
       $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + serviceTotal(s), 0));
@@ -1760,6 +1783,9 @@
       const v = data.vehicle;
       $('carName').value = v.name || '';
       $('carYear').value = v.year || '';
+      $('carPlateCountry').value = v.plateCountry || '';
+      $('carPlate').value = v.plate || '';
+      $('carVin').value = v.vin || '';
       resetOdoForm()
     }
 
@@ -1873,7 +1899,10 @@
       e.preventDefault();
       data.vehicle = {
         name: $('carName').value.trim(),
-        year: $('carYear').value.trim()
+        year: $('carYear').value.trim(),
+        plateCountry: $('carPlateCountry').value.trim().toUpperCase(),
+        plate: $('carPlate').value.trim(),
+        vin: $('carVin').value.trim().toUpperCase()
       };
       persist();
       render();
