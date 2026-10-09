@@ -582,14 +582,81 @@
 
     .plate-row {
       display: grid;
-      grid-template-columns: 88px minmax(0, 1fr);
-      gap: 10px;
-      align-items: end
+      grid-template-columns: 64px minmax(0, 1fr);
+      border: 2px solid #242a30;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 4px #00000018;
+      overflow: hidden
     }
 
-    .plate-country input {
+    #vehicleForm .plate-row .form-control {
+      height: 56px;
+      border: 0 !important;
+      border-radius: 0;
+      padding: 8px 14px;
+      font: 700 clamp(20px, 5vw, 30px)/1.2 'Arial Narrow', Arial, sans-serif;
+      letter-spacing: 2px;
       text-transform: uppercase;
+      background: #fff !important;
+      color: #14171b !important
+    }
+
+    #vehicleForm .plate-country .form-control {
+      height: 100%;
+      padding: 6px;
+      background: #003399 !important;
+      color: #fff !important;
+      font: 700 15px/1 Arial, sans-serif;
+      letter-spacing: 0;
       text-align: center
+    }
+
+    #vehicleForm .plate-country .form-control::placeholder {
+      color: #ffffffb3
+    }
+
+    #vehicleForm .plate-row .form-control:focus {
+      outline: 0;
+      box-shadow: inset 0 0 0 3px var(--mint) !important
+    }
+
+    .vehicle-plate {
+      display: inline-flex;
+      align-items: stretch;
+      max-width: 100%;
+      margin-top: 12px;
+      border: 2px solid #242a30;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 4px #00000018;
+      overflow: hidden;
+      vertical-align: top
+    }
+
+    .vehicle-plate-country {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      flex: 0 0 auto;
+      min-width: 42px;
+      padding: 6px;
+      background: #003399;
+      color: #fff;
+      font: 700 15px/1 Arial, sans-serif
+    }
+
+    .vehicle-plate-number {
+      align-self: center;
+      min-width: 0;
+      padding: 8px 14px;
+      color: #14171b;
+      font: 700 clamp(20px, 5vw, 30px)/1.2 'Arial Narrow', Arial, sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      overflow-wrap: anywhere
     }
 
     .detail-notes {
@@ -1151,6 +1218,12 @@
     <div class="d-flex justify-content-between align-items-start gap-2">
       <div><h1 id="vehicleTitle" class="h4 fw-bold mb-1">My Car</h1>
         <div id="vehicleSubtitle" class="muted small">Add your vehicle details below</div>
+        <div id="vehiclePlate" class="vehicle-plate hidden" role="img">
+          <div id="vehiclePlateBand" class="vehicle-plate-country" aria-hidden="true">
+            <span id="vehiclePlateCountry"></span>
+          </div>
+          <span id="vehiclePlateNumber" class="vehicle-plate-number" aria-hidden="true"></span>
+        </div>
       </div>
       <button class="mini-btn" data-tab="settings">Edit</button>
     </div>
@@ -1758,8 +1831,14 @@
     function render() {
       const v = data.vehicle;
       $('vehicleTitle').textContent = v.name || 'My Car';
-      const plate = [v.plateCountry, v.plate].filter(Boolean).join(' ');
-      $('vehicleSubtitle').textContent = [v.year, plate, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(' · ') || 'Maintenance overview';
+      const plateCountry = (v.plateCountry || '').trim().toUpperCase();
+      const plateNumber = (v.plate || '').trim().toUpperCase();
+      $('vehicleSubtitle').textContent = [v.year, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(' · ') || 'Maintenance overview';
+      $('vehiclePlate').classList.toggle('hidden', !plateNumber);
+      $('vehiclePlateBand').classList.toggle('hidden', !plateCountry);
+      $('vehiclePlateCountry').textContent = plateCountry;
+      $('vehiclePlateNumber').textContent = plateNumber;
+      $('vehiclePlate').setAttribute('aria-label', 'Registration plate: ' + [plateCountry, plateNumber].filter(Boolean).join(' '));
       const latestReading = latestOdo(), odo = latestReading ? parseNum(latestReading.km) : null;
       $('odoStat').textContent = odo === null ? '-' : num(odo) + ' km';
       $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + serviceTotal(s), 0));
