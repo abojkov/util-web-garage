@@ -1398,14 +1398,14 @@
       <form id="vehicleForm">
         <div class="mb-3"><label class="form-label" for="carName">Vehicle name</label><input class="form-control"
                                                                                              id="carName"
-                                                                                             placeholder="Vehicle name"
+                                                                                             placeholder="Skoda Fabia 1.4 TDI"
                                                                                              required maxlength="80">
         </div>
         <div class="row g-2">
           <div class="col-6 mb-3"><label class="form-label" for="carYear">Year</label><input class="form-control"
                                                                                              id="carYear"
                                                                                              inputmode="numeric"
-                                                                                             placeholder="YYYY"></div>
+                                                                                             placeholder="2016"></div>
         </div>
         <div class="mb-3"><label class="form-label" for="carPlate">Registration plate</label>
           <div class="plate-row">
@@ -1549,7 +1549,7 @@
     const $ = id => document.getElementById(id);
     const today = () => new Date().toLocaleDateString('en-CA');
     const blank = () => ({
-      vehicle: {name: '', year: '', plateCountry: '', plate: '', vin: ''},
+      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016', plateCountry: '', plate: '', vin: ''},
       odometerReadings: [],
       services: [],
       reminders: []
@@ -1918,7 +1918,7 @@
       $('vehicleTitle').textContent = v.name || 'My Car';
       const plateCountry = (v.plateCountry || '').trim().toUpperCase();
       const plateNumber = (v.plate || '').trim().toUpperCase();
-      $('vehicleSubtitle').textContent = [v.year, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(' · ') || (v.name ? 'Maintenance overview' : 'Add your vehicle details in Settings');
+      $('vehicleSubtitle').textContent = [v.year, v.vin ? 'VIN ' + v.vin : ''].filter(Boolean).join(' · ') || 'Maintenance overview';
       $('vehiclePlate').classList.toggle('hidden', !plateNumber);
       $('vehiclePlateBand').classList.toggle('hidden', !plateCountry);
       $('vehiclePlateCountry').textContent = plateCountry;
