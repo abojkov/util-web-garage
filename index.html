@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0c1218">
+  <title>Garage — Car Maintenance</title>
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0c1218;
+      --surface: #151e26;
+      --surface2: #1c2932;
+      --border: #2a3943;
+      --text: #eff9f7;
+      --muted: #94a8ae;
+      --mint: #8df0c9;
+      --orange: #ffc68b
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      padding-bottom: 96px
+    }
+
+    .app {
+      max-width: 740px;
+      margin: auto;
+      padding: 24px 16px
+    }
+
+    .brand {
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -1px
+    }
+
+    .brand span {
+      color: var(--mint)
+    }
+
+    .eyebrow {
+      color: var(--mint);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 23px;
+      padding: 20px
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #203c3b, #14232b 75%);
+      border: 1px solid #31554c
+    }
+
+    .stat {
+      background: var(--surface2);
+      border-radius: 16px;
+      padding: 14px;
+      min-width: 0
+    }
+
+    .stat strong {
+      font-size: 21px;
+      display: block;
+      overflow-wrap: anywhere
+    }
+
+    .stat small {
+      color: var(--muted)
+    }
+
+    .btn-mint {
+      background: var(--mint);
+      color: #09251e;
+      border: 0;
+      font-weight: 800;
+      border-radius: 13px;
+      padding: 12px 16px
+    }
+
+    .btn-mint:hover {
+      background: #b3ffdf;
+      color: #09251e
+    }
+
+    .btn-outline-custom {
+      background: #1d2a32;
+      border: 1px solid #40515a;
+      color: #e5f5f0;
+      border-radius: 12px;
+      padding: 10px 14px
+    }
+
+    .form-control, .form-select {
+      background: #0f1921 !important;
+      border: 1px solid #3a4b55 !important;
+      color: #f1faf7 !important;
+      border-radius: 12px;
+      padding: 12px
+    }
+
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 2px #8df0c933 !important
+    }
+
+    .form-control::placeholder {
+      color: #71858b
+    }
+
+    .form-label {
+      color: #b5c8ca;
+      font-size: 13px;
+      font-weight: 650
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 30px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 750;
+      background: #253840;
+      color: #d0e3df
+    }
+
+    .pill.due {
+      background: #513b2d;
+      color: #ffd0a1
+    }
+
+    .pill.overdue {
+      background: #4a2a32;
+      color: #ffb3bf
+    }
+
+    .record {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .record:last-child {
+      border-bottom: 0
+    }
+
+    .record-title {
+      font-weight: 750
+    }
+
+    .mini-btn {
+      border: 1px solid #41535b;
+      border-radius: 9px;
+      background: transparent;
+      color: #d6e8e3;
+      padding: 6px 10px;
+      font-size: 12px
+    }
+
+    .danger {
+      color: #ffb3bf
+    }
+
+    .navtabs {
+      display: flex;
+      gap: 7px;
+      overflow: auto;
+      padding-bottom: 5px
+    }
+
+    .navtabs button {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: #a7bdc0;
+      padding: 10px 15px;
+      font-weight: 700;
+      white-space: nowrap
+    }
+
+    .navtabs button.active {
+      background: var(--mint);
+      color: #09251e
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .empty {
+      padding: 30px 8px;
+      text-align: center;
+      color: var(--muted)
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .toastline {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 90vw;
+      background: #8df0c9;
+      color: #09251e;
+      border-radius: 14px;
+      padding: 11px 17px;
+      font-weight: 700;
+      z-index: 100;
+      box-shadow: 0 8px 30px #0008
+    }
+
+    .form-check-input {
+      background-color: #13232a;
+      border-color: #4e6569
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0
+    }
+
+    input[type=date] {
+      color-scheme: dark
+    }
+
+    button:focus-visible {
+      outline: 3px solid var(--mint);
+      outline-offset: 2px
+    }
+
+    @media (max-width: 420px) {
+      .panel {
+        padding: 16px
+      }
+
+      .stat strong {
+        font-size: 18px
+      }
+
+      .app {
+        padding: 18px 12px
+      }
+    }
+
+    /* Layout safeguards: work even when iOS local-file viewers omit linked CSS. */
+    .app > .panel, .tab > .panel, .tab > .panel + .panel {
+      margin-bottom: 18px !important;
+    }
+
+    .hero {
+      margin-bottom: 18px !important;
+    }
+
+    .navtabs {
+      margin: 0 0 20px !important;
+      padding: 0 0 4px;
+      gap: 10px;
+    }
+
+    .tab .panel + .panel {
+      margin-top: 18px;
+    }
+
+    .panel .section-title {
+      margin-bottom: 16px;
+    }
+
+    #settings .panel {
+      padding: 22px 20px;
+    }
+
+    #settings .panel + .panel {
+      margin-top: 20px;
+    }
+
+    #vehicleForm {
+      display: flex;
+      flex-direction: column;
+      gap: 17px;
+    }
+
+    #vehicleForm .row {
+      display: flex;
+      flex-direction: column;
+      gap: 17px;
+      margin: 0;
+    }
+
+    #vehicleForm .row > div {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+      margin: 0 !important;
+    }
+
+    #vehicleForm > div {
+      margin: 0 !important;
+    }
+
+    #vehicleForm .form-label {
+      display: block;
+      margin: 0 0 8px;
+    }
+
+    #vehicleForm .form-control {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      min-height: 48px;
+    }
+
+    #vehicleForm .btn-mint {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 600px) {
+      .navtabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: visible;
+      }
+
+      .navtabs button {
+        min-width: 0;
+        white-space: normal;
+        text-align: center;
+        padding: 12px 8px;
+      }
+
+      .hero .row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 14px 0 0;
+      }
+
+      .hero .row > div {
+        width: auto;
+        padding: 0;
+      }
+
+      #settings .panel {
+        padding: 20px 17px;
+      }
+    }
+
+    /* Nested purchased parts — all layouts are single-column and iPhone-safe */
+    #partsSection {
+      display: block !important;
+      width: 100%;
+      min-width: 0;
+      margin: 10px 0 0 !important;
+      padding: 20px 16px;
+      border: 1px solid #354954;
+      border-radius: 20px;
+      background: #101d26;
+      box-sizing: border-box
+    }
+
+    #partsSection .parts-heading {
+      font-size: 19px;
+      font-weight: 750;
+      margin-bottom: 8px
+    }
+
+    #partsSection .parts-hint {
+      font-size: 13px;
+      color: #9eafb8;
+      line-height: 1.5;
+      margin-bottom: 16px
+    }
+
+    #partsList {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: 16px
+    }
+
+    .part-card {
+      border: 1px solid #38505c;
+      background: #172630;
+      border-radius: 16px;
+      padding: 16px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box
+    }
+
+    .part-card .part-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px
+    }
+
+    .part-card .part-title {
+      font-weight: 750;
+      font-size: 16px
+    }
+
+    .part-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .part-field {
+      width: 100%;
+      min-width: 0
+    }
+
+    .part-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 650;
+      color: #b7c6cd;
+      margin-bottom: 8px
+    }
+
+    .part-field input, .part-field textarea {
+      display: block;
+      box-sizing: border-box;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      border: 1px solid #415764;
+      border-radius: 13px;
+      background: #0e1a23;
+      color: #f0faf7;
+      padding: 13px 14px;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1.4;
+      min-height: 50px;
+      appearance: none;
+      -webkit-appearance: none
+    }
+
+    .part-field textarea {
+      min-height: 86px;
+      resize: vertical
+    }
+
+    .part-field input[type=date] {
+      -webkit-min-logical-width: 0 !important;
+      text-align: left;
+      overflow: hidden
+    }
+
+    .part-field input[type=date]::-webkit-date-and-time-value {
+      text-align: left;
+      min-width: 0
+    }
+
+    .part-field input[type=date]::-webkit-datetime-edit {
+      min-width: 0;
+      max-width: 100%
+    }
+
+    .part-remove {
+      border: 1px solid #73505b;
+      background: transparent;
+      color: #ffb7bd;
+      border-radius: 10px;
+      padding: 8px 11px;
+      font: inherit;
+      font-size: 13px
+    }
+
+    #addPart {
+      width: 100%;
+      min-height: 50px
+    }
+
+    #partsTotals {
+      margin-top: 15px;
+      color: #b7c6cd;
+      font-size: 14px;
+      line-height: 1.7
+    }
+
+    .part-details {
+      margin-top: 12px;
+      padding: 13px;
+      border-radius: 12px;
+      background: #101d26;
+      border: 1px solid #2b424d;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #bbccd3;
+      overflow-wrap: anywhere
+    }
+
+    .part-details strong {
+      color: #effaf6
+    }
+  </style>
+  <style>
+    /* Self-contained confirmation dialog for local iOS HTML viewers */
+    .garage-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(3, 9, 14, .78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(7px)
+    }
+
+    .garage-overlay.hidden {
+      display: none !important
+    }
+
+    .garage-dialog {
+      width: 100%;
+      max-width: 390px;
+      background: #19262e;
+      color: #f0faf8;
+      border: 1px solid #3c565c;
+      border-radius: 24px;
+      padding: 25px 22px;
+      box-shadow: 0 20px 70px #0009
+    }
+
+    .garage-dialog h2 {
+      font-size: 23px;
+      font-weight: 750;
+      margin: 0 0 12px
+    }
+
+    .garage-dialog p {
+      color: #b4c5c8;
+      line-height: 1.5;
+      margin: 0 0 24px
+    }
+
+    .garage-dialog-actions {
+      display: flex;
+      gap: 10px
+    }
+
+    .garage-dialog-actions button {
+      flex: 1;
+      min-height: 48px;
+      border-radius: 13px;
+      font-size: 16px;
+      font-weight: 700;
+      border: 1px solid #465e63
+    }
+
+    .garage-cancel {
+      background: #26343d;
+      color: #e6f0f0
+    }
+
+    .garage-accept {
+      background: #fa8484;
+      color: #182128;
+      border-color: #fa8484 !important
+    }
+
+    .garage-accept.safe {
+      background: #8af0cb;
+      border-color: #8af0cb !important
+    }
+
+    /* Editor layout v1.3: independent of Bootstrap grid or margin utilities. */
+    #editor > .d-flex {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 14px;
+      margin-bottom: 22px !important;
+    }
+
+    #editor #editorTitle {
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    #editor > .panel {
+      padding: 24px 20px;
+    }
+
+    #entryForm {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #entryForm > div {
+      margin: 0 !important;
+      min-width: 0;
+    }
+
+    #entryForm .row, #entryForm #serviceFields .row {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin: 0 !important;
+    }
+
+    #entryForm .row > div, #entryForm #serviceFields .row > div {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex: 0 0 auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      min-width: 0;
+    }
+
+    #entryForm .form-label {
+      display: block !important;
+      margin: 0 0 9px !important;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    #entryForm .form-control, #entryForm .form-select {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      min-height: 50px;
+      padding: 13px 15px !important;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    #entryForm textarea.form-control {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    #entryForm #serviceFields {
+      display: block;
+    }
+
+    #entryForm #serviceFields.hidden {
+      display: none !important;
+    }
+
+    #entryForm .btn-mint {
+      display: block;
+      width: 100% !important;
+      min-height: 52px;
+      margin-top: 4px;
+      font-size: 16px;
+    }
+
+    @media (max-width: 600px) {
+      #editor > .panel {
+        padding: 22px 18px;
+      }
+
+      #entryForm {
+        gap: 19px;
+      }
+    }
+
+    /* v1.4 — consistent mobile layout, no dependency on Bootstrap utility loading */
+    html {
+      width: 100%;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%
+    }
+
+    body {
+      margin: 0;
+      width: 100%;
+      overflow-x: hidden;
+      font-size: 16px;
+      line-height: 1.5
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      box-sizing: border-box
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    .app {
+      width: 100%;
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 24px 16px 90px
+    }
+
+    .app > header {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 0 0 24px !important
+    }
+
+    .app > header .brand {
+      line-height: 1.15
+    }
+
+    .app > header .pill {
+      flex: 0 0 auto
+    }
+
+    .app > .hero {
+      margin: 0 0 22px !important
+    }
+
+    .hero .eyebrow {
+      margin-bottom: 14px !important
+    }
+
+    .hero h1 {
+      font-size: clamp(23px, 6vw, 34px);
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+      margin: 0 0 8px
+    }
+
+    .hero .d-flex {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap
+    }
+
+    .hero .row {
+      display: grid !important;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0 0 !important
+    }
+
+    .hero .row > div {
+      width: 100% !important;
+      max-width: 100%;
+      padding: 0 !important;
+      margin: 0 !important;
+      min-width: 0
+    }
+
+    .hero .stat {
+      height: 100%;
+      min-width: 0
+    }
+
+    .navtabs {
+      margin: 0 0 24px !important;
+      gap: 10px !important
+    }
+
+    .tab > .panel {
+      margin: 0 0 22px !important
+    }
+
+    .tab > .panel + .panel {
+      margin-top: 22px !important
+    }
+
+    #dashboard > .d-grid {
+      display: grid !important;
+      gap: 12px !important;
+      margin: 0 0 22px !important
+    }
+
+    #dashboard > .d-grid button {
+      width: 100%
+    }
+
+    #history > .d-flex, #schedule > .d-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 20px !important
+    }
+
+    #settings .panel {
+      padding: 22px 20px
+    }
+
+    #settings .panel .section-title {
+      margin: 0 0 20px !important
+    }
+
+    #vehicleForm, #entryForm {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 22px !important;
+      min-width: 0;
+      width: 100%
+    }
+
+    #vehicleForm > div, #entryForm > div {
+      margin: 0 !important;
+      width: 100%;
+      min-width: 0
+    }
+
+    #vehicleForm .row, #entryForm .row, #entryForm #serviceFields .row {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 22px !important;
+      margin: 0 !important;
+      width: 100%
+    }
+
+    #vehicleForm .row > div, #entryForm .row > div, #entryForm #serviceFields .row > div {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      flex: none !important;
+      padding: 0 !important;
+      margin: 0 !important
+    }
+
+    #vehicleForm .form-label, #entryForm .form-label {
+      display: block !important;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.4;
+      margin: 0 0 10px !important
+    }
+
+    #vehicleForm .form-control, #entryForm .form-control, #entryForm .form-select {
+      display: block !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      height: 54px;
+      min-height: 54px;
+      margin: 0 !important;
+      padding: 12px 14px !important;
+      font-size: 16px !important;
+      line-height: 1.3;
+      border-radius: 14px;
+    }
+
+    #entryForm textarea.form-control {
+      height: auto;
+      min-height: 116px;
+      resize: vertical
+    }
+
+    #entryForm input[type=date] {
+      display: block !important;
+      position: relative;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      -webkit-min-logical-width: 0 !important;
+      appearance: none;
+      -webkit-appearance: none;
+      padding: 12px 14px !important;
+      text-align: left !important;
+      overflow: hidden
+    }
+
+    #entryForm input[type=date]::-webkit-date-and-time-value {
+      text-align: left;
+      min-width: 0;
+      width: 100%;
+    }
+
+    #entryForm input[type=date]::-webkit-datetime-edit {
+      min-width: 0;
+      max-width: 100%;
+      padding: 0
+    }
+
+    #entryForm input[type=date]::-webkit-calendar-picker-indicator {
+      margin: 0 0 0 auto;
+      flex-shrink: 0
+    }
+
+    #entryForm #serviceFields {
+      width: 100%;
+      min-width: 0;
+      overflow: visible
+    }
+
+    #entryForm #serviceFields.hidden {
+      display: none !important
+    }
+
+    #entryForm input[type=hidden] {
+      display: none !important
+    }
+
+    #vehicleForm .btn-mint, #entryForm .btn-mint {
+      width: 100% !important;
+      min-height: 54px;
+      margin: 4px 0 0 !important
+    }
+
+    #editor > .d-flex {
+      margin: 0 0 20px !important;
+      gap: 12px !important
+    }
+
+    #editor > .panel {
+      margin: 0 0 24px !important;
+      min-width: 0;
+      overflow: hidden
+    }
+
+    #editor .panel form {
+      max-width: 100%
+    }
+
+    #settings .d-grid {
+      display: grid;
+      gap: 12px !important
+    }
+
+    #settings .d-grid button {
+      width: 100%
+    }
+
+    #reminderInfo.hidden, .hidden {
+      display: none !important
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        padding: 22px 16px 80px
+      }
+
+      .panel {
+        padding: 20px 18px
+      }
+
+      #editor > .panel, #settings .panel {
+        padding: 22px 18px
+      }
+
+      .navtabs {
+        display: grid !important;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        overflow: visible
+      }
+
+      .navtabs button {
+        width: 100%;
+        min-width: 0;
+        white-space: normal
+      }
+
+      .hero .row {
+        grid-template-columns:1fr 1fr
+      }
+
+      .hero .stat {
+        padding: 12px
+      }
+
+      .hero .stat strong {
+        font-size: 17px
+      }
+    }
+
+    @media (max-width: 360px) {
+      .hero .row {
+        grid-template-columns:1fr
+      }
+
+      .app {
+        padding-inline: 12px
+      }
+    }
+  </style>
+</head>
+<body>
+<main class="app">
+  <header class="d-flex justify-content-between align-items-center mb-4">
+    <div class="brand">garage<span>.</span></div>
+    <span class="pill">● OFFLINE FIRST</span></header>
+  <section class="panel hero mb-3">
+    <div class="eyebrow mb-2">YOUR VEHICLE</div>
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div><h1 id="vehicleTitle" class="h4 fw-bold mb-1">My Car</h1>
+        <div id="vehicleSubtitle" class="muted small">Add your vehicle details below</div>
+      </div>
+      <button class="mini-btn" data-tab="settings">Edit</button>
+    </div>
+    <div class="row g-2 mt-3">
+      <div class="col-6">
+        <div class="stat"><small>Odometer</small><strong id="odoStat">—</strong></div>
+      </div>
+      <div class="col-6">
+        <div class="stat"><small>Total service spend</small><strong id="spendStat">€0.00</strong></div>
+      </div>
+    </div>
+  </section>
+  <nav class="navtabs mb-3" aria-label="Sections">
+    <button class="active" data-tab="dashboard">Overview</button>
+    <button data-tab="history">Service history</button>
+    <button data-tab="schedule">Upcoming</button>
+    <button data-tab="settings">Settings & backup</button>
+  </nav>
+  <section id="dashboard" class="tab">
+    <div class="d-grid gap-2 mb-3">
+      <button class="btn-mint" id="newService">＋ Add service record</button>
+      <button class="btn-outline-custom" id="newReminder">＋ Schedule maintenance</button>
+    </div>
+    <div class="panel mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="section-title">Maintenance status</div>
+        <span id="dueCount" class="pill">0 upcoming</span></div>
+      <div id="dashboardDue"></div>
+    </div>
+    <div class="panel">
+      <div class="section-title mb-2">Recent services</div>
+      <div id="dashboardRecent"></div>
+    </div>
+  </section>
+  <section id="history" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title">Service history</div>
+      <button class="btn-mint" id="newService2">＋ Add</button>
+    </div>
+    <div class="panel">
+      <div class="row g-2 mb-2">
+        <div class="col-7"><input id="searchHistory" class="form-control" placeholder="Search services"
+                                  aria-label="Search services"></div>
+        <div class="col-5"><select id="categoryFilter" class="form-select" aria-label="Filter category">
+          <option value="">All types</option>
+          <option>Oil & filters</option>
+          <option>Tires</option>
+          <option>Brakes</option>
+          <option>Inspection</option>
+          <option>Fluids</option>
+          <option>Battery</option>
+          <option>Repair</option>
+          <option>Other</option>
+        </select></div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </section>
+  <section id="schedule" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title">Upcoming maintenance</div>
+      <button class="btn-mint" id="newReminder2">＋ Add</button>
+    </div>
+    <div class="panel"><p class="hint">Items become due when their date arrives or the odometer reaches their target.
+      Alerts appear when you open the app; iOS system notifications are not available.</p>
+      <div id="scheduleList"></div>
+    </div>
+  </section>
+  <section id="settings" class="tab hidden">
+    <div class="panel mb-3">
+      <div class="section-title mb-3">Vehicle details</div>
+      <form id="vehicleForm">
+        <div class="mb-3"><label class="form-label" for="carName">Vehicle name</label><input class="form-control"
+                                                                                             id="carName"
+                                                                                             placeholder="Skoda Fabia 1.4 TDI"
+                                                                                             required maxlength="80">
+        </div>
+        <div class="row g-2">
+          <div class="col-6 mb-3"><label class="form-label" for="carYear">Year</label><input class="form-control"
+                                                                                             id="carYear"
+                                                                                             inputmode="numeric"
+                                                                                             placeholder="2016"></div>
+          <div class="col-6 mb-3"><label class="form-label" for="carOdo">Odometer (km)</label><input
+              class="form-control" id="carOdo" inputmode="decimal" placeholder="125000"></div>
+        </div>
+        <button class="btn-mint w-100" type="submit">Save vehicle</button>
+      </form>
+    </div>
+    <div class="panel mb-3">
+      <div class="section-title mb-2">Backup your data</div>
+      <p class="hint">Your records stay on this device in browser storage. Local HTML storage may be cleared by iOS or a
+        viewer app. Export a JSON backup regularly.</p>
+      <div class="d-grid gap-2">
+        <button id="exportBtn" class="btn-mint">↓ Export JSON backup</button>
+        <button id="importBtn" class="btn-outline-custom">↑ Import JSON backup</button>
+        <input id="importFile" type="file" accept=".json,application/json" class="hidden">
+        <button id="exportCsv" class="btn-outline-custom">↓ Export services as CSV</button>
+      </div>
+      <div class="divider"></div>
+      <button id="clearBtn" class="mini-btn danger">Erase all local data</button>
+    </div>
+    <p class="hint text-center">Made for your iPhone · No accounts · No server · Decimal comma supported</p></section>
+  <section id="editor" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button id="backBtn" class="mini-btn">← Back</button>
+      <div id="editorTitle" class="section-title">Add service</div>
+    </div>
+    <div class="panel">
+      <form id="entryForm"><input id="entryId" type="hidden"><input id="entryType" type="hidden">
+        <div class="mb-3"><label class="form-label" for="entryName">Maintenance item *</label><input id="entryName"
+                                                                                                     class="form-control"
+                                                                                                     required
+                                                                                                     maxlength="100"
+                                                                                                     placeholder="Engine oil change">
+        </div>
+        <div class="mb-3"><label class="form-label" for="entryCategory">Category</label><select id="entryCategory"
+                                                                                                class="form-select">
+          <option>Oil & filters</option>
+          <option>Tires</option>
+          <option>Brakes</option>
+          <option>Inspection</option>
+          <option>Fluids</option>
+          <option>Battery</option>
+          <option>Repair</option>
+          <option>Other</option>
+        </select></div>
+        <div class="row g-2">
+          <div class="col-6 mb-3"><label id="dateLabel" class="form-label" for="entryDate">Service date *</label><input
+              id="entryDate" class="form-control" type="date"></div>
+          <div class="col-6 mb-3"><label id="kmLabel" class="form-label" for="entryKm">Odometer (km)</label><input
+              id="entryKm" class="form-control" inputmode="decimal" placeholder="125000"></div>
+        </div>
+        <div id="partsSection" class="hidden">
+          <div class="parts-heading">Purchased parts & filters</div>
+          <p class="parts-hint">Add each filter or other part separately. Record prices, where you bought it, and
+            product details. These entries are saved inside this service record.</p>
+          <div id="partsList"></div>
+          <button id="addPart" type="button" class="btn-outline-custom">＋ Add filter or part</button>
+          <div id="partsTotals" aria-live="polite"></div>
+        </div>
+        <div id="serviceFields">
+          <div class="row g-2">
+            <div class="col-6 mb-3"><label class="form-label" for="entryCost">Cost (€)</label><input id="entryCost"
+                                                                                                     class="form-control"
+                                                                                                     inputmode="decimal"
+                                                                                                     placeholder="89,50">
+            </div>
+            <div class="col-6 mb-3"><label class="form-label" for="entryShop">Workshop</label><input id="entryShop"
+                                                                                                     class="form-control"
+                                                                                                     maxlength="100"
+                                                                                                     placeholder="Optional">
+            </div>
+          </div>
+        </div>
+        <div id="reminderInfo" class="hint mb-3 hidden">Set a target date, target mileage, or both. Leave either one
+          blank if not needed.
+        </div>
+        <div class="mb-3"><label class="form-label" for="entryNotes">Notes</label><textarea id="entryNotes"
+                                                                                            class="form-control"
+                                                                                            rows="3" maxlength="1000"
+                                                                                            placeholder="Parts, oil type, details…"></textarea>
+        </div>
+        <button class="btn-mint w-100" type="submit">Save record</button>
+      </form>
+    </div>
+  </section>
+</main>
+<div id="garageConfirm" class="garage-overlay hidden" role="dialog" aria-modal="true"
+     aria-labelledby="garageConfirmTitle">
+  <div class="garage-dialog"><h2 id="garageConfirmTitle">Confirm action</h2>
+    <p id="garageConfirmText"></p>
+    <div class="garage-dialog-actions">
+      <button type="button" id="garageCancel" class="garage-cancel">Cancel</button>
+      <button type="button" id="garageAccept" class="garage-accept">Confirm</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toastline hidden" role="status"></div>
+<script>
+  (() => {
+    'use strict';
+    const KEY = 'garage-tracker-v1';
+    const $ = id => document.getElementById(id);
+    const today = () => new Date().toLocaleDateString('en-CA');
+    const blank = () => ({
+      vehicle: {name: 'Skoda Fabia 1.4 TDI', year: '2016', odometer: ''},
+      services: [],
+      reminders: []
+    });
+    let data = blank(), tab = 'dashboard', returnTab = 'dashboard';
+    const parseNum = v => {
+      if (v === null || v === undefined || String(v).trim() === '') return null;
+      let s = String(v).trim().replace(/\s/g, '');
+      if (s.includes(',') && s.includes('.')) {
+        s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '')
+      } else {
+        s = s.replace(',', '.')
+      }
+      const n = Number(s);
+      return Number.isFinite(n) && n >= 0 ? n : null
+    };
+    const money = n => new Intl.NumberFormat('de-DE', {style: 'currency', currency: 'EUR'}).format(n || 0);
+    const num = n => new Intl.NumberFormat('de-DE', {maximumFractionDigits: 1}).format(n);
+    const fmtDate = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }) : 'No date';
+    const el = (tag, cls, txt) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (txt !== undefined) e.textContent = txt;
+      return e
+    };
+    const id = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+
+    function toast(s) {
+      $('toast').textContent = s;
+      $('toast').classList.remove('hidden');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => $('toast').classList.add('hidden'), 2800)
+    }
+
+    function askConfirm(message, action, opts = {}) {
+      const overlay = $('garageConfirm'), ok = $('garageAccept');
+      $('garageConfirmTitle').textContent = opts.title || 'Are you sure?';
+      $('garageConfirmText').textContent = message;
+      ok.textContent = opts.button || 'Confirm';
+      ok.classList.toggle('safe', !!opts.safe);
+      overlay.classList.remove('hidden');
+
+      function close() {
+        overlay.classList.add('hidden');
+        ok.removeEventListener('click', accept);
+        $('garageCancel').removeEventListener('click', cancel)
+      }
+
+      function accept() {
+        close();
+        action()
+      }
+
+      function cancel() {
+        close()
+      }
+
+      ok.addEventListener('click', accept);
+      $('garageCancel').addEventListener('click', cancel)
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(data));
+        return true
+      } catch (e) {
+        toast('Storage unavailable. Export a backup.');
+        return false
+      }
+    }
+
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const v = JSON.parse(raw);
+        if (valid(v)) data = v
+      }
+    } catch (e) {
+    }
+
+    function valid(v) {
+      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
+    }
+
+    function show(t) {
+      tab = t;
+      document.querySelectorAll('.tab').forEach(e => e.classList.toggle('hidden', e.id !== t));
+      document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+      if (t === 'settings') fillVehicle();
+      render();
+      window.scrollTo(0, 0)
+    }
+
+    document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+
+    function status(r) {
+      const km = parseNum(data.vehicle.odometer), target = parseNum(r.km);
+      const days = r.date ? Math.ceil((new Date(r.date + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 86400000) : null;
+      const left = target !== null && km !== null ? target - km : null;
+      if ((days !== null && days < 0) || (left !== null && left < 0)) return 'overdue';
+      if ((days !== null && days <= 30) || (left !== null && left <= 1000)) return 'due';
+      return 'planned'
+    }
+
+    function summary(r, type) {
+      const wrap = el('div', 'record');
+      const row = el('div', 'd-flex justify-content-between gap-2 align-items-start');
+      const left = el('div', 'flex-grow-1');
+      left.append(el('div', 'record-title', r.name), el('div', 'hint', r.category + ' · ' + fmtDate(r.date) + (r.km !== null && r.km !== '' && r.km !== undefined ? ' · ' + num(Number(r.km)) + ' km' : '')));
+      if (r.notes) left.append(el('div', 'hint mt-1', r.notes));
+      if (type === 'service' && Array.isArray(r.parts) && r.parts.length) {
+        const details = el('details', 'part-details');
+        const heading = el('summary', '', r.parts.length + ' purchased part' + (r.parts.length === 1 ? '' : 's') + ' · ' + money(r.parts.reduce((t, p) => t + (parseNum(p.discountedPrice) ?? parseNum(p.originalPrice) ?? 0), 0)));
+        details.append(heading);
+        r.parts.forEach(p => {
+          const d = el('div', '');
+          d.style.marginTop = '12px';
+          const name = el('strong', '', p.name || 'Unnamed part');
+          d.append(name);
+          const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? 'Paid ' + money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? 'Price ' + money(parseNum(p.originalPrice)) : '', p.notes].filter(Boolean).join(' · ');
+          if (desc) d.append(el('div', '', desc));
+          details.append(d)
+        });
+        left.append(details)
+      }
+      row.append(left);
+      if (type === 'reminder') {
+        const s = status(r),
+          b = el('span', 'pill ' + (s === 'planned' ? '' : s), s === 'due' ? 'Due soon' : s === 'overdue' ? 'Overdue' : 'Planned');
+        row.append(b)
+      } else row.append(el('strong', 'text-nowrap', money(r.cost)));
+      wrap.append(row);
+      const actions = el('div', 'd-flex gap-2 mt-2');
+      const edit = el('button', 'mini-btn', 'Edit');
+      edit.addEventListener('click', () => openEditor(type, r));
+      const del = el('button', 'mini-btn danger', 'Delete');
+      del.addEventListener('click', () => {
+        askConfirm('This record will be permanently deleted.', () => {
+          data[type === 'service' ? 'services' : 'reminders'] = data[type === 'service' ? 'services' : 'reminders'].filter(x => x.id !== r.id);
+          persist();
+          render();
+          toast('Deleted')
+        }, {title: 'Delete record?', button: 'Delete'})
+      });
+      actions.append(edit, del);
+      if (type === 'reminder') {
+        const done = el('button', 'mini-btn', 'Mark done');
+        done.addEventListener('click', () => {
+          askConfirm('This reminder will be moved to your service history.', () => {
+            data.services.unshift({
+              id: id(),
+              name: r.name,
+              category: r.category,
+              date: today(),
+              km: parseNum(data.vehicle.odometer),
+              cost: 0,
+              shop: '',
+              notes: r.notes || ''
+            });
+            data.reminders = data.reminders.filter(x => x.id !== r.id);
+            persist();
+            render();
+            toast('Added to service history')
+          }, {title: 'Mark as completed?', button: 'Mark done', safe: true})
+        });
+        actions.prepend(done)
+      }
+      wrap.append(actions);
+      return wrap
+    }
+
+    function fillList(node, items, type, empty) {
+      node.replaceChildren();
+      if (!items.length) {
+        node.append(el('div', 'empty', empty));
+        return
+      }
+      items.forEach(x => node.append(summary(x, type)))
+    }
+
+    function render() {
+      const v = data.vehicle;
+      $('vehicleTitle').textContent = v.name || 'My Car';
+      $('vehicleSubtitle').textContent = (v.year ? v.year + ' · ' : '') + 'Maintenance overview';
+      const odo = parseNum(v.odometer);
+      $('odoStat').textContent = odo === null ? '—' : num(odo) + ' km';
+      $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + (parseNum(s.cost) || 0), 0));
+      const sorted = [...data.services].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      const reminders = [...data.reminders].sort((a, b) => {
+        const order = {overdue: 0, due: 1, planned: 2};
+        return order[status(a)] - order[status(b)] || (a.date || '9999').localeCompare(b.date || '9999')
+      });
+      const urgent = reminders.filter(x => status(x) !== 'planned');
+      $('dueCount').textContent = urgent.length + ' due / soon';
+      fillList($('dashboardDue'), reminders.slice(0, 3), 'reminder', 'No scheduled maintenance. Add your next service.');
+      fillList($('dashboardRecent'), sorted.slice(0, 3), 'service', 'No service records yet.');
+      const q = $('searchHistory').value.toLowerCase(), cat = $('categoryFilter').value;
+      fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.category, ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
+      fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.')
+    }
+
+    function fillVehicle() {
+      const v = data.vehicle;
+      $('carName').value = v.name || '';
+      $('carYear').value = v.year || '';
+      $('carOdo').value = v.odometer ?? ''
+    }
+
+    let editorParts = [];
+
+    function partField(card, label, key, placeholder = '', kind = 'text') {
+      const wrap = el('div', 'part-field'), lab = el('label', '', label),
+        inp = el(kind === 'textarea' ? 'textarea' : 'input', '');
+      if (kind !== 'textarea') {
+        inp.type = kind === 'date' ? 'date' : 'text';
+        if (key === 'originalPrice' || key === 'discountedPrice') inp.inputMode = 'decimal'
+      }
+      inp.placeholder = placeholder;
+      inp.value = card.part[key] ?? '';
+      inp.addEventListener('input', () => {
+        card.part[key] = inp.value;
+        updatePartsTotal()
+      });
+      wrap.append(lab, inp);
+      return wrap
+    }
+
+    function updatePartsTotal() {
+      const total = editorParts.reduce((t, p) => t + (parseNum(p.discountedPrice) ?? parseNum(p.originalPrice) ?? 0), 0);
+      const original = editorParts.reduce((t, p) => t + (parseNum(p.originalPrice) ?? 0), 0);
+      $('partsTotals').textContent = editorParts.length ? ('Parts total: ' + money(total) + (original > total ? ' · Saved: ' + money(original - total) : '')) : 'No parts added yet.'
+    }
+
+    function renderParts() {
+      const list = $('partsList');
+      list.replaceChildren();
+      editorParts.forEach((p, i) => {
+        const card = el('div', 'part-card'), top = el('div', 'part-top'), fields = el('div', 'part-fields'),
+          remove = el('button', 'part-remove', 'Remove');
+        remove.type = 'button';
+        remove.onclick = () => askConfirm('Remove this part from the service record?', () => {
+          editorParts.splice(i, 1);
+          renderParts()
+        }, {title: 'Remove part?', button: 'Remove'});
+        top.append(el('div', 'part-title', 'Part ' + (i + 1)), remove);
+        const ctx = {part: p};
+        fields.append(partField(ctx, 'Filter / part name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand & model / part number', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
+        card.append(top, fields);
+        list.append(card)
+      });
+      updatePartsTotal()
+    }
+
+    $('addPart').addEventListener('click', () => {
+      editorParts.push({
+        name: '',
+        model: '',
+        originalPrice: '',
+        discountedPrice: '',
+        purchaseDate: '',
+        shop: '',
+        notes: ''
+      });
+      renderParts()
+    });
+
+    function openEditor(type, record) {
+      returnTab = tab;
+      $('entryForm').reset();
+      $('entryId').value = record?.id || '';
+      $('entryType').value = type;
+      $('editorTitle').textContent = (record ? 'Edit ' : 'Add ') + (type === 'service' ? 'service' : 'maintenance reminder');
+      $('serviceFields').classList.toggle('hidden', type !== 'service');
+      $('partsSection').classList.toggle('hidden', type !== 'service');
+      editorParts = type === 'service' && Array.isArray(record?.parts) ? record.parts.map(p => ({...p})) : [];
+      renderParts();
+      $('reminderInfo').classList.toggle('hidden', type === 'service');
+      $('dateLabel').textContent = type === 'service' ? 'Service date *' : 'Target date';
+      $('kmLabel').textContent = type === 'service' ? 'Odometer (km)' : 'Target odometer (km)';
+      $('entryDate').required = type === 'service';
+      $('entryDate').value = record?.date ?? (type === 'service' ? today() : '');
+      $('entryName').value = record?.name || '';
+      $('entryCategory').value = record?.category || 'Oil & filters';
+      $('entryKm').value = record?.km ?? '';
+      $('entryCost').value = record?.cost ?? '';
+      $('entryShop').value = record?.shop || '';
+      $('entryNotes').value = record?.notes || '';
+      show('editor')
+    }
+
+    $('newService').onclick = $('newService2').onclick = () => openEditor('service');
+    $('newReminder').onclick = $('newReminder2').onclick = () => openEditor('reminder');
+    $('backBtn').onclick = () => show(returnTab);
+    $('searchHistory').addEventListener('input', render);
+    $('categoryFilter').addEventListener('change', render);
+    $('vehicleForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const odo = $('carOdo').value.trim(), parsed = parseNum(odo);
+      if (odo && parsed === null) return toast('Enter a valid odometer');
+      data.vehicle = {
+        name: $('carName').value.trim(),
+        year: $('carYear').value.trim(),
+        odometer: parsed === null ? '' : parsed
+      };
+      persist();
+      render();
+      toast('Vehicle saved')
+    });
+    $('entryForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const type = $('entryType').value;
+      const kmRaw = $('entryKm').value.trim(), costRaw = $('entryCost').value.trim(), km = parseNum(kmRaw),
+        cost = parseNum(costRaw);
+      if (kmRaw && km === null) return toast('Enter a valid mileage');
+      if (type === 'service' && costRaw && cost === null) return toast('Enter a valid cost');
+      if (type === 'reminder' && !$('entryDate').value && km === null) return toast('Enter a target date or mileage');
+      const r = {
+        id: $('entryId').value || id(),
+        name: $('entryName').value.trim(),
+        category: $('entryCategory').value,
+        date: $('entryDate').value,
+        km,
+        notes: $('entryNotes').value.trim()
+      };
+      if (type === 'service') {
+        for (const p of editorParts) {
+          if (!p.name.trim()) return toast('Enter a name for every part');
+          for (const k of ['originalPrice', 'discountedPrice']) {
+            if (p[k] !== '' && parseNum(p[k]) === null) return toast('Check part prices: use a number')
+          }
+          if (p.originalPrice !== '' && p.discountedPrice !== '' && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Paid price cannot exceed original price')
+        }
+        r.parts = editorParts.map(p => ({...p, name: p.name.trim()}));
+        r.cost = cost || 0;
+        r.shop = $('entryShop').value.trim()
+      }
+      const key = type === 'service' ? 'services' : 'reminders';
+      const idx = data[key].findIndex(x => x.id === r.id);
+      if (idx < 0) data[key].push(r); else data[key][idx] = r;
+      persist();
+      show(type === 'service' ? 'history' : 'schedule');
+      toast('Saved successfully')
+    });
+
+    function download(name, content, mime) {
+      const blob = new Blob([content], {type: mime}), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000)
+    }
+
+    $('exportBtn').onclick = () => {
+      download('garage-backup-' + today() + '.json', JSON.stringify({
+        ...data,
+        exportedAt: new Date().toISOString()
+      }, null, 2), 'application/json');
+      toast('Backup prepared — save it in Files')
+    };
+    $('importBtn').onclick = () => $('importFile').click();
+    $('importFile').addEventListener('change', async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        if (file.size > 5_000_000) throw Error('File too large');
+        const incoming = JSON.parse(await file.text());
+        if (!valid(incoming)) throw Error('Not a valid Garage backup');
+        askConfirm('This will replace your existing records. Export your current data first.', () => {
+          data = {vehicle: incoming.vehicle, services: incoming.services, reminders: incoming.reminders};
+          persist();
+          show('dashboard');
+          toast('Backup imported')
+        }, {title: 'Replace all records?', button: 'Import'})
+      } catch (err) {
+        alert('Import failed: ' + err.message)
+      } finally {
+        e.target.value = ''
+      }
+    });
+    $('exportCsv').onclick = () => {
+      const rows = [['Date', 'Service', 'Category', 'Odometer km', 'Cost EUR', 'Workshop', 'Notes', 'Purchased parts (JSON)'], ...data.services.map(x => [x.date, x.name, x.category, x.km ?? '', x.cost ?? 0, x.shop || '', x.notes || '', JSON.stringify(x.parts || [])])];
+      const csv = '\ufeff' + rows.map(row => row.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+      download('garage-services-' + today() + '.csv', csv, 'text/csv;charset=utf-8');
+      toast('CSV prepared')
+    };
+    $('clearBtn').onclick = () => {
+      askConfirm('This permanently removes your vehicle, service history and reminders from this browser. Export a JSON backup first.', () => {
+        data = blank();
+        persist();
+        show('dashboard');
+        toast('Local data erased')
+      }, {title: 'Erase all local data?', button: 'Erase everything'})
+    };
+    show('dashboard')
+  })();
+</script>
+</body>
+</html>
