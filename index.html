@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#e8ecef">
   <title>Garage - Car Maintenance</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
   <link rel="stylesheet" href="bootstrap.min.css">
   <style>
     :root {
@@ -38,9 +40,19 @@
     }
 
     .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
       font-size: 25px;
       font-weight: 800;
       letter-spacing: -1px
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      object-fit: cover
     }
 
     .brand span {
@@ -1106,7 +1118,7 @@
 <body>
 <main class="app">
   <header class="d-flex justify-content-between align-items-center mb-4">
-    <div class="brand">garage<span>.</span></div>
+    <div class="brand"><img class="brand-logo" src="logo.png" alt="">garage<span>.</span></div>
     <span class="pill">● OFFLINE FIRST</span></header>
   <section class="panel hero mb-3">
     <div class="eyebrow mb-2">YOUR VEHICLE</div>
