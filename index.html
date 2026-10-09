@@ -715,16 +715,29 @@
       flex-shrink: 0
     }
 
-    .editor-actions .editor-save {
+    .editor-actions .editor-save, .service-detail-actions .editor-save {
       background: var(--mint);
       border-color: var(--mint);
       color: #0d2a22;
       font-weight: 700
     }
 
-    .editor-actions .editor-save:hover {
+    .editor-actions .editor-save:hover, .service-detail-actions .editor-save:hover {
       background: #6dd9b2;
       border-color: #6dd9b2
+    }
+
+    .service-detail-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px
+    }
+
+    .service-detail-actions > div {
+      display: flex;
+      gap: 8px
     }
 
     @media print {
@@ -1245,6 +1258,25 @@
     .navtabs button:focus-visible {
       box-shadow: inset 0 0 0 3px #ffffff, 0 0 0 3px var(--mint);
     }
+
+    #editor.tab > .editor-actions,
+    #serviceDetail.tab > .service-detail-actions {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      min-height: 64px !important;
+      margin: 0 0 20px !important;
+      padding: 0 !important;
+      position: static !important;
+      background: transparent !important;
+      gap: 12px !important;
+    }
+
+    #serviceDetail .service-detail-actions > div {
+      display: flex;
+      gap: 12px;
+    }
   </style>
 </head>
 <body>
@@ -1349,17 +1381,15 @@
     </div>
   </section>
   <section id="serviceDetail" class="tab hidden">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="service-detail-actions">
       <button id="detailBackBtn" class="mini-btn">← Back</button>
-      <div id="detailTitle" class="section-title">Service details</div>
+      <div>
+        <button id="detailEditBtn" class="mini-btn editor-save" aria-label="Edit service">Edit</button>
+        <button id="detailDeleteBtn" class="mini-btn danger" aria-label="Delete service">Delete</button>
+      </div>
     </div>
     <div class="panel">
       <div id="serviceDetailBody"></div>
-      <div class="divider"></div>
-      <div class="d-grid gap-2">
-        <button id="detailEditBtn" class="btn-mint">Edit service</button>
-        <button id="detailDeleteBtn" class="mini-btn danger">Delete service</button>
-      </div>
     </div>
   </section>
   <section id="settings" class="tab hidden">
@@ -1426,12 +1456,12 @@
     </div>
     <p class="hint text-center">Made for your iPhone · No accounts · No server · Decimal comma supported</p></section>
   <section id="editor" class="tab hidden">
-    <div class="editor-actions d-flex justify-content-between align-items-center mb-3">
+    <div class="editor-actions">
       <button id="backBtn" class="mini-btn">← Back</button>
       <button class="mini-btn editor-save" type="submit" form="entryForm">Save</button>
     </div>
-    <div id="editorTitle" class="section-title mb-3">Add service</div>
     <div class="panel">
+      <div id="editorTitle" class="section-title mb-3">Add service</div>
       <form id="entryForm"><input id="entryId" type="hidden"><input id="entryType" type="hidden">
         <div class="mb-3"><label class="form-label" for="entryName">Maintenance item *</label><input id="entryName"
                                                                                                      class="form-control"
@@ -1457,11 +1487,11 @@
               id="entryKm" class="form-control" inputmode="decimal" placeholder="125000"></div>
         </div>
         <div id="partsSection" class="hidden">
-          <div class="parts-heading">Purchased parts & filters</div>
-          <p class="parts-hint">Add each filter or other part separately. Record prices, where you bought it, and
+          <div class="parts-heading">Items & products</div>
+          <p class="parts-hint">Add each item or product separately. Record prices, where you bought it, and
             product details. These entries are saved inside this service record.</p>
           <div id="partsList"></div>
-          <button id="addPart" type="button" class="btn-outline-custom">＋ Add filter or part</button>
+          <button id="addPart" type="button" class="btn-outline-custom">＋ Add item or product</button>
           <div id="partsTotals" aria-live="polite"></div>
         </div>
         <div id="serviceFields">
@@ -1685,12 +1715,12 @@
       if (r.notes && !recent) left.append(el('div', 'hint mt-1', r.notes));
       if (type === 'service' && Array.isArray(r.parts) && r.parts.length) {
         const details = el('details', 'part-details');
-          const heading = el('summary', '', r.parts.length + ' purchased part' + (r.parts.length === 1 ? '' : 's') + ' · ' + money(partsTotal(r.parts)));
+          const heading = el('summary', '', r.parts.length + ' item' + (r.parts.length === 1 ? '' : 's') + ' · ' + money(partsTotal(r.parts)));
         details.append(heading);
         r.parts.forEach(p => {
           const d = el('div', '');
           d.style.marginTop = '12px';
-          const name = el('strong', '', p.name || 'Unnamed part');
+          const name = el('strong', '', p.name || 'Unnamed item');
           d.append(name);
           const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? 'Paid ' + money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? 'Price ' + money(parseNum(p.originalPrice)) : '', recent ? '' : p.notes].filter(Boolean).join(' · ');
           if (desc) d.append(el('div', '', desc));
@@ -1793,11 +1823,9 @@
       const service = data.services.find(x => x.id === selectedServiceId), body = $('serviceDetailBody');
       body.replaceChildren();
       if (!service) {
-        $('detailTitle').textContent = 'Service details';
         body.append(el('div', 'empty', 'This service record no longer exists.'));
         return
       }
-      $('detailTitle').textContent = service.name || 'Service details';
       const heading = el('div', '');
       heading.append(el('div', 'pill', service.category || 'Service'), el('h2', 'section-title mt-3 mb-1', service.name || 'Service'));
       if (service.notes) heading.append(el('div', 'hint', 'Notes included'));
@@ -1809,7 +1837,7 @@
         workshopDetailItem(service)
       );
       const costs = el('div', 'cost-breakdown');
-      [['Workshop cost', money(parseNum(service.workshopCost) || 0)], ['Parts total', money(partsTotal(service.parts))], ['Delivery fees', money(deliveryTotal(service))]].forEach(([label, value]) => {
+      [['Workshop cost', money(parseNum(service.workshopCost) || 0)], ['Items total', money(partsTotal(service.parts))], ['Delivery fees', money(deliveryTotal(service))]].forEach(([label, value]) => {
         const chip = el('div', 'cost-chip');
         chip.append(document.createTextNode(label + ':'), el('strong', '', value));
         costs.append(chip)
@@ -1821,10 +1849,10 @@
       }
       if (Array.isArray(service.parts) && service.parts.length) {
         body.append(el('div', 'divider'));
-        body.append(el('div', 'section-title mb-2', 'Purchased parts'));
+        body.append(el('div', 'section-title mb-2', 'Items & products'));
         service.parts.forEach((p, i) => {
           const part = el('div', 'part-details');
-          part.append(el('strong', '', (i + 1) + '. ' + (p.name || 'Unnamed part')));
+          part.append(el('strong', '', (i + 1) + '. ' + (p.name || 'Unnamed item')));
           const grid = el('div', 'detail-grid');
           grid.append(
             detailItem('Brand / model', p.model || '-'),
@@ -1948,7 +1976,7 @@
       const total = editorParts.reduce((t, p) => t + (parseNum(p.discountedPrice) ?? parseNum(p.originalPrice) ?? 0), 0);
       const original = editorParts.reduce((t, p) => t + (parseNum(p.originalPrice) ?? 0), 0);
       const delivery = parseNum($('entryDeliveryFee').value) || 0;
-      $('partsTotals').textContent = editorParts.length ? ('Parts total: ' + money(total) + (original > total ? ' · Saved: ' + money(original - total) : '')) : 'No parts added yet.';
+      $('partsTotals').textContent = editorParts.length ? ('Items total: ' + money(total) + (original > total ? ' · Saved: ' + money(original - total) : '')) : 'No items added yet.';
       const workshop = parseNum($('entryWorkshopCost').value) || 0;
       $('serviceCostTotal').textContent = 'Final maintenance cost: ' + money(total + delivery + workshop)
     }
@@ -1960,13 +1988,13 @@
         const card = el('div', 'part-card'), top = el('div', 'part-top'), fields = el('div', 'part-fields'),
           remove = el('button', 'part-remove', 'Remove');
         remove.type = 'button';
-        remove.onclick = () => askConfirm('Remove this part from the service record?', () => {
+        remove.onclick = () => askConfirm('Remove this item from the service record?', () => {
           editorParts.splice(i, 1);
           renderParts()
-        }, {title: 'Remove part?', button: 'Remove'});
-        top.append(el('div', 'part-title', 'Part ' + (i + 1)), remove);
+        }, {title: 'Remove item?', button: 'Remove'});
+        top.append(el('div', 'part-title', 'Item ' + (i + 1)), remove);
         const ctx = {part: p};
-        fields.append(partField(ctx, 'Filter / part name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand & model / part number', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
+        fields.append(partField(ctx, 'Item / product name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand, model / product code', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
         card.append(top, fields);
         list.append(card)
       });
@@ -2089,7 +2117,7 @@
       };
       if (type === 'service') {
         for (const p of editorParts) {
-          if (!p.name.trim()) return toast('Enter a name for every part');
+          if (!p.name.trim()) return toast('Enter a name for every item');
           const purchaseDate = parseUiDate(p.purchaseDate);
           if (p.purchaseDate && !purchaseDate) return toast('Enter valid part purchase dates');
           p.purchaseDate = purchaseDate;
@@ -2151,7 +2179,7 @@
       }
     });
     $('exportCsv').onclick = () => {
-      const rows = [['Date', 'Service', 'Category', 'Odometer km', 'Final cost EUR', 'Parts EUR', 'Delivery EUR', 'Workshop', 'Workshop address', 'Workshop cost EUR', 'Notes', 'Purchased parts (JSON)'], ...data.services.map(x => [x.date, x.name, x.category, x.km ?? '', serviceTotal(x), partsTotal(x.parts), deliveryTotal(x), x.workshop || x.shop || '', x.workshopAddress || '', x.workshopCost ?? 0, x.notes || '', JSON.stringify(x.parts || [])])];
+      const rows = [['Date', 'Service', 'Category', 'Odometer km', 'Final cost EUR', 'Items EUR', 'Delivery EUR', 'Workshop', 'Workshop address', 'Workshop cost EUR', 'Notes', 'Items & products (JSON)'], ...data.services.map(x => [x.date, x.name, x.category, x.km ?? '', serviceTotal(x), partsTotal(x.parts), deliveryTotal(x), x.workshop || x.shop || '', x.workshopAddress || '', x.workshopCost ?? 0, x.notes || '', JSON.stringify(x.parts || [])])];
       const csv = '\ufeff' + rows.map(row => row.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
       download('garage-services-' + today() + '.csv', csv, 'text/csv;charset=utf-8');
       toast('CSV prepared')
