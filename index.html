@@ -1677,12 +1677,12 @@
       }, {title: 'Delete record?', button: 'Delete'})
     }
 
-    function summary(r, type) {
+    function summary(r, type, recent = false) {
       const wrap = el('div', 'record');
       const row = el('div', 'd-flex justify-content-between gap-2 align-items-start');
       const left = el('div', 'flex-grow-1');
       left.append(el('div', 'record-title', r.name), el('div', 'hint', r.category + ' · ' + fmtDate(r.date) + (r.km !== null && r.km !== '' && r.km !== undefined ? ' · ' + num(Number(r.km)) + ' km' : '')));
-      if (r.notes) left.append(el('div', 'hint mt-1', r.notes));
+      if (r.notes && !recent) left.append(el('div', 'hint mt-1', r.notes));
       if (type === 'service' && Array.isArray(r.parts) && r.parts.length) {
         const details = el('details', 'part-details');
           const heading = el('summary', '', r.parts.length + ' purchased part' + (r.parts.length === 1 ? '' : 's') + ' · ' + money(partsTotal(r.parts)));
@@ -1692,7 +1692,7 @@
           d.style.marginTop = '12px';
           const name = el('strong', '', p.name || 'Unnamed part');
           d.append(name);
-          const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? 'Paid ' + money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? 'Price ' + money(parseNum(p.originalPrice)) : '', p.notes].filter(Boolean).join(' · ');
+          const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? 'Paid ' + money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? 'Price ' + money(parseNum(p.originalPrice)) : '', recent ? '' : p.notes].filter(Boolean).join(' · ');
           if (desc) d.append(el('div', '', desc));
           details.append(d)
         });
@@ -1711,11 +1711,13 @@
         view.addEventListener('click', () => openServiceDetail(r.id));
         actions.append(view)
       }
-      const edit = el('button', 'mini-btn', 'Edit');
-      edit.addEventListener('click', () => openEditor(type, r));
-      const del = el('button', 'mini-btn danger', 'Delete');
-      del.addEventListener('click', () => deleteRecord(type, r));
-      actions.append(edit, del);
+      if (!recent) {
+        const edit = el('button', 'mini-btn', 'Edit');
+        edit.addEventListener('click', () => openEditor(type, r));
+        const del = el('button', 'mini-btn danger', 'Delete');
+        del.addEventListener('click', () => deleteRecord(type, r));
+        actions.append(edit, del);
+      }
       if (type === 'reminder') {
         const done = el('button', 'mini-btn', 'Mark done');
         done.addEventListener('click', () => {
@@ -1746,13 +1748,13 @@
       return wrap
     }
 
-    function fillList(node, items, type, empty) {
+    function fillList(node, items, type, empty, recent = false) {
       node.replaceChildren();
       if (!items.length) {
         node.append(el('div', 'empty', empty));
         return
       }
-      items.forEach(x => node.append(summary(x, type)))
+      items.forEach(x => node.append(summary(x, type, recent)))
     }
 
     function detailItem(label, value) {
@@ -1905,7 +1907,7 @@
       const urgent = reminders.filter(x => status(x) !== 'planned');
       $('dueCount').textContent = urgent.length + ' due / soon';
       fillList($('dashboardDue'), reminders.slice(0, 3), 'reminder', 'No scheduled maintenance. Add your next service.');
-      fillList($('dashboardRecent'), sorted.slice(0, 3), 'service', 'No service records yet.');
+      fillList($('dashboardRecent'), sorted.slice(0, 3), 'service', 'No service records yet.', true);
       const q = $('searchHistory').value.toLowerCase(), cat = $('categoryFilter').value;
       fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.workshop, x.workshopAddress, x.category, ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
       fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.');
