@@ -1825,7 +1825,7 @@
       const left = el('div', 'flex-grow-1');
       left.append(el('div', 'record-title', r.name), el('div', 'hint', r.category + ' · ' + fmtDate(r.date) + (r.km !== null && r.km !== '' && r.km !== undefined ? ' · ' + num(Number(r.km)) + ' km' : '')));
       if (r.notes && !recent) left.append(el('div', 'hint mt-1', r.notes));
-      if (type === 'service' && Array.isArray(r.parts) && r.parts.length) {
+      if (Array.isArray(r.parts) && r.parts.length) {
         const details = el('details', 'part-details');
           const heading = el('summary', '', r.parts.length + ' item' + (r.parts.length === 1 ? '' : 's') + ' · ' + money(partsTotal(r.parts)));
         details.append(heading);
@@ -1884,18 +1884,19 @@
         const done = el('button', 'mini-btn', 'Mark done');
         done.addEventListener('click', () => {
           askConfirm('This reminder will be moved to your service history.', () => {
-            data.services.unshift({
+            const completed = {
               id: id(),
               name: r.name,
               category: r.category,
               date: today(),
               km: latestOdo()?.km ?? null,
-              cost: 0,
-              workshopServices: [],
-              otherCosts: [],
-              parts: [],
+              workshopServices: (r.workshopServices || []).map(job => ({...job})),
+              otherCosts: (r.otherCosts || []).map(cost => ({...cost})),
+              parts: (r.parts || []).map(part => ({...part})),
               notes: r.notes || ''
-            });
+            };
+            completed.cost = serviceTotal(completed);
+            data.services.unshift(completed);
             data.reminders = data.reminders.filter(x => x.id !== r.id);
             persist();
             render();
@@ -2252,8 +2253,8 @@
       $('entryType').value = type;
       $('editorTitle').textContent = (record ? 'Edit ' : 'Add ') + (type === 'service' ? 'service' : 'maintenance reminder');
       $('serviceFields').classList.toggle('hidden', type !== 'service');
-      $('partsSection').classList.toggle('hidden', type !== 'service');
-      editorParts = type === 'service' && Array.isArray(record?.parts) ? record.parts.map(p => ({...p})) : [];
+      $('partsSection').classList.remove('hidden');
+      editorParts = Array.isArray(record?.parts) ? record.parts.map(p => ({...p})) : [];
       editorWorkshops = type === 'service' ? (record?.workshopServices || []).map(job => ({...job})) : [];
       editorOtherCosts = type === 'service' ? (record?.otherCosts || []).map(cost => ({...cost})) : [];
       renderParts();
@@ -2342,18 +2343,18 @@
         km,
         notes: $('entryNotes').value.trim()
       };
-      if (type === 'service') {
-        for (const p of editorParts) {
-          if (!p.name.trim()) return toast('Enter a name for every item');
-          const purchaseDate = parseUiDate(p.purchaseDate);
-          if (p.purchaseDate && !purchaseDate) return toast('Enter valid part purchase dates');
-          p.purchaseDate = purchaseDate;
-          for (const k of ['originalPrice', 'discountedPrice']) {
-            if (p[k] !== '' && parseNum(p[k]) === null) return toast('Check part prices: use a number')
-          }
-          if (p.originalPrice !== '' && p.discountedPrice !== '' && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Final price cannot exceed original price')
+      for (const p of editorParts) {
+        if (!p.name.trim()) return toast('Enter a name for every item');
+        const purchaseDate = parseUiDate(p.purchaseDate);
+        if (p.purchaseDate && !purchaseDate) return toast('Enter valid part purchase dates');
+        p.purchaseDate = purchaseDate;
+        for (const k of ['originalPrice', 'discountedPrice']) {
+          if (p[k] !== '' && p[k] != null && parseNum(p[k]) === null) return toast('Check part prices: use a number')
         }
-        r.parts = editorParts.map(p => ({...p, name: p.name.trim()}));
+        if (parseNum(p.originalPrice) !== null && parseNum(p.discountedPrice) !== null && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Final price cannot exceed original price')
+      }
+      r.parts = editorParts.map(p => ({...p, name: p.name.trim()}));
+      if (type === 'service') {
         for (const job of editorWorkshops) {
           if (!job.name.trim()) return toast('Enter a name for every workshop service');
           if (job.date && !parseUiDate(job.date)) return toast('Enter valid workshop service dates');
