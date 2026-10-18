@@ -1834,7 +1834,7 @@
           d.style.marginTop = '12px';
           const name = el('strong', '', p.name || 'Unnamed item');
           d.append(name);
-          const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? 'Paid ' + money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? 'Price ' + money(parseNum(p.originalPrice)) : '', recent ? '' : p.notes].filter(Boolean).join(' · ');
+          const desc = [p.model, p.shop, p.purchaseDate ? fmtDate(p.purchaseDate) : '', p.discountedPrice !== '' && p.discountedPrice != null ? money(parseNum(p.discountedPrice)) : p.originalPrice !== '' && p.originalPrice != null ? money(parseNum(p.originalPrice)) : '', recent ? '' : p.notes].filter(Boolean).join(' · ');
           if (desc) d.append(el('div', '', desc));
           details.append(d)
         });
@@ -1927,7 +1927,7 @@
       const original = parseNum(part.originalPrice);
       const paid = parseNum(part.discountedPrice);
       const price = paid ?? original;
-      const item = detailItem('Paid price', price === null ? '-' : money(price));
+      const item = detailItem('Final price', price === null ? '-' : money(price));
       if (original !== null && paid !== null) {
         item.querySelector('strong').replaceChildren(
           el('del', '', money(original)),
@@ -2160,7 +2160,7 @@
         }, {title: 'Remove item?', button: 'Remove'});
         top.append(el('div', 'part-title', 'Item ' + (i + 1)), remove);
         const ctx = {part: p};
-        appendPartFields(fields, partField(ctx, 'Item / product name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand, model / product code', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
+        appendPartFields(fields, partField(ctx, 'Item / product name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand, model / product code', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / Final price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
         card.append(top, fields);
         list.append(card)
       });
@@ -2198,7 +2198,7 @@
           partField(ctx, 'Workshop', 'workshop', 'Workshop name'),
           partField(ctx, 'Service date', 'date', '', 'date'),
           partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 80,00'),
-          partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 65,00'),
+          partField(ctx, 'Discounted / Final price (€)', 'discountedPrice', 'e.g. 65,00'),
           partField(ctx, 'Workshop full address', 'address', 'Street, city, country', 'textarea'),
           partField(ctx, 'Additional information', 'notes', 'Work performed, warranty…', 'textarea')
         );
@@ -2231,7 +2231,7 @@
           partField(ctx, 'Cost name', 'name', 'e.g. Delivery fees'),
           partField(ctx, 'Paid to', 'entity', 'Company or person'),
           partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 10,00'),
-          partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 7,50')
+          partField(ctx, 'Discounted / Final price (€)', 'discountedPrice', 'e.g. 7,50')
         );
         card.append(top, fields);
         list.append(card)
@@ -2351,7 +2351,7 @@
           for (const k of ['originalPrice', 'discountedPrice']) {
             if (p[k] !== '' && parseNum(p[k]) === null) return toast('Check part prices: use a number')
           }
-          if (p.originalPrice !== '' && p.discountedPrice !== '' && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Paid price cannot exceed original price')
+          if (p.originalPrice !== '' && p.discountedPrice !== '' && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Final price cannot exceed original price')
         }
         r.parts = editorParts.map(p => ({...p, name: p.name.trim()}));
         for (const job of editorWorkshops) {
@@ -2360,7 +2360,7 @@
           for (const key of ['originalPrice', 'discountedPrice']) {
             if (job[key] !== '' && job[key] != null && parseNum(job[key]) === null) return toast('Check workshop prices: use a number');
           }
-          if (parseNum(job.originalPrice) !== null && parseNum(job.discountedPrice) !== null && parseNum(job.discountedPrice) > parseNum(job.originalPrice)) return toast('Workshop paid price cannot exceed original price');
+          if (parseNum(job.originalPrice) !== null && parseNum(job.discountedPrice) !== null && parseNum(job.discountedPrice) > parseNum(job.originalPrice)) return toast('Workshop final price cannot exceed original price');
         }
         r.workshopServices = editorWorkshops.map(job => ({...job, name: job.name.trim(), date: parseUiDate(job.date) || ''}));
         for (const cost of editorOtherCosts) {
@@ -2368,7 +2368,7 @@
           for (const key of ['originalPrice', 'discountedPrice']) {
             if (cost[key] !== '' && cost[key] != null && parseNum(cost[key]) === null) return toast('Check other cost prices: use a number');
           }
-          if (parseNum(cost.originalPrice) !== null && parseNum(cost.discountedPrice) !== null && parseNum(cost.discountedPrice) > parseNum(cost.originalPrice)) return toast('Other cost paid price cannot exceed original price');
+          if (parseNum(cost.originalPrice) !== null && parseNum(cost.discountedPrice) !== null && parseNum(cost.discountedPrice) > parseNum(cost.originalPrice)) return toast('Other cost final price cannot exceed original price');
         }
         r.otherCosts = editorOtherCosts.map(cost => ({...cost, name: cost.name.trim(), entity: (cost.entity || '').trim()}));
         r.cost = serviceTotal(r)
