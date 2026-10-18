@@ -46,7 +46,7 @@
     }
 
     .app {
-      max-width: 740px;
+      max-width: none;
       margin: auto;
       padding: 24px 16px
     }
@@ -949,9 +949,9 @@
 
     .app {
       width: 100%;
-      max-width: 740px;
+      max-width: none;
       margin: 0 auto;
-      padding: 24px 16px 90px
+      padding: 24px clamp(16px, 2vw, 48px) 90px
     }
 
     .app > header {
