@@ -1289,6 +1289,50 @@
       display: flex;
       gap: 12px;
     }
+
+    @media (min-width: 900px) {
+      #vehicleForm, #entryForm {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+      }
+
+      #vehicleForm .row, #odoForm .row, #entryForm .row, #entryForm #serviceFields .row {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #vehicleForm .row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      #entryForm > .row, #entryForm > .form-wide,
+      #entryForm #partsSection, #entryForm #serviceFields, #entryForm #reminderInfo {
+        grid-column: 1 / -1;
+      }
+
+      .part-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #vehicleForm .btn-mint, #odoForm .btn-mint {
+        width: auto !important;
+        justify-self: start;
+        align-self: start;
+        padding-inline: 24px;
+      }
+
+      #vehicleForm .btn-mint {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      #entryForm #serviceFields .service-cost-fields, .part-fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -1507,7 +1551,7 @@
           <div id="partsTotals" aria-live="polite"></div>
         </div>
         <div id="serviceFields">
-          <div class="row g-2">
+          <div class="row g-2 service-cost-fields">
             <div class="col-6 mb-3"><label class="form-label" for="entryDeliveryFee">Delivery fees (€)</label><input id="entryDeliveryFee"
                                                                                                      class="form-control"
                                                                                                      inputmode="decimal"
@@ -1518,8 +1562,6 @@
                                                                                                      maxlength="100"
                                                                                                      placeholder="Optional">
             </div>
-          </div>
-          <div class="row g-2">
             <div class="col-6 mb-3"><label class="form-label" for="entryWorkshopCost">Workshop cost (€)</label><input id="entryWorkshopCost"
                                                                                                      class="form-control"
                                                                                                      inputmode="decimal"
@@ -1534,7 +1576,7 @@
         <div id="reminderInfo" class="hint mb-3 hidden">Set a target date, target mileage, or both. Leave either one
           blank if not needed.
         </div>
-        <div class="mb-3"><label class="form-label" for="entryNotes">Notes</label><textarea id="entryNotes"
+        <div class="mb-3 form-wide"><label class="form-label" for="entryNotes">Notes</label><textarea id="entryNotes"
                                                                                             class="form-control"
                                                                                             rows="3" maxlength="1000"
                                                                                             placeholder="Parts, oil type, details…"></textarea>
