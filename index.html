@@ -401,8 +401,8 @@
       }
     }
 
-    /* Nested purchased parts - all layouts are single-column and iPhone-safe */
-    #partsSection {
+    /* Nested products and workshop services; stacked on mobile. */
+    #partsSection, #workshopSection, #otherCostsSection {
       display: block !important;
       width: 100%;
       min-width: 0;
@@ -414,20 +414,20 @@
       box-sizing: border-box
     }
 
-    #partsSection .parts-heading {
+    #partsSection .parts-heading, #workshopSection .parts-heading, #otherCostsSection .parts-heading {
       font-size: 19px;
       font-weight: 750;
       margin-bottom: 8px
     }
 
-    #partsSection .parts-hint {
+    #partsSection .parts-hint, #workshopSection .parts-hint, #otherCostsSection .parts-hint {
       font-size: 13px;
       color: #66767c;
       line-height: 1.5;
       margin-bottom: 16px
     }
 
-    #partsList {
+    #partsList, #workshopList, #otherCostsList {
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -500,6 +500,13 @@
       resize: vertical
     }
 
+    .price-fields {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+      width: 100%;
+    }
+
     .part-field input[type=date] {
       -webkit-min-logical-width: 0 !important;
       text-align: left;
@@ -526,12 +533,12 @@
       font-size: 13px
     }
 
-    #addPart {
+    #addPart, #addWorkshopService, #addOtherCost {
       width: 100%;
       min-height: 50px
     }
 
-    #partsTotals {
+    #partsTotals, #workshopTotals, #otherCostsTotals {
       margin-top: 15px;
       color: #526269;
       font-size: 14px;
@@ -1312,7 +1319,27 @@
       }
 
       .part-fields {
-        display: grid;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .part-fields > .part-field {
+        flex: 1 1 260px;
+        width: auto;
+      }
+
+      .part-fields > .date-field {
+        flex: .6 1 220px;
+      }
+
+      .part-fields > .textarea-field {
+        flex: 1 1 400px;
+      }
+
+      .part-fields > .price-fields {
+        flex: .8 1 380px;
+        width: auto;
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
@@ -1328,11 +1355,6 @@
       }
     }
 
-    @media (min-width: 1200px) {
-      #entryForm #serviceFields .service-cost-fields, .part-fields {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-    }
   </style>
 </head>
 <body>
@@ -1500,7 +1522,7 @@
     <div class="panel mb-3">
       <div class="section-title mb-2">Backup your data</div>
       <p class="hint">Your records stay on this device in browser storage. Local HTML storage may be cleared by iOS or a
-        viewer app. Export a JSON backup regularly.</p>
+        viewer app. Export a JSON backup regularly. V1 and v2 backups can still be imported; exports use v3 with workshop services and other costs.</p>
       <div class="d-grid gap-2">
         <button id="exportBtn" class="btn-mint">↓ Export JSON backup</button>
         <button id="importBtn" class="btn-outline-custom">↑ Import JSON backup</button>
@@ -1551,26 +1573,20 @@
           <div id="partsTotals" aria-live="polite"></div>
         </div>
         <div id="serviceFields">
-          <div class="row g-2 service-cost-fields">
-            <div class="col-6 mb-3"><label class="form-label" for="entryDeliveryFee">Delivery fees (€)</label><input id="entryDeliveryFee"
-                                                                                                     class="form-control"
-                                                                                                     inputmode="decimal"
-                                                                                                     placeholder="4,99">
-            </div>
-            <div class="col-6 mb-3"><label class="form-label" for="entryWorkshop">Workshop</label><input id="entryWorkshop"
-                                                                                                     class="form-control"
-                                                                                                     maxlength="100"
-                                                                                                     placeholder="Optional">
-            </div>
-            <div class="col-6 mb-3"><label class="form-label" for="entryWorkshopCost">Workshop cost (€)</label><input id="entryWorkshopCost"
-                                                                                                     class="form-control"
-                                                                                                     inputmode="decimal"
-                                                                                                     placeholder="89,50">
-            </div>
+          <div id="workshopSection">
+            <div class="parts-heading">Workshop services</div>
+            <p class="parts-hint">Add each job separately, including its workshop, price, date, and any notes.</p>
+            <div id="workshopList"></div>
+            <button id="addWorkshopService" type="button" class="btn-outline-custom">＋ Add workshop service</button>
+            <div id="workshopTotals" aria-live="polite"></div>
           </div>
-          <div class="mb-3"><label class="form-label" for="entryWorkshopAddress">Workshop full address</label><textarea
-              id="entryWorkshopAddress" class="form-control" rows="2" maxlength="300"
-              placeholder="Street, city, country"></textarea></div>
+          <div id="otherCostsSection">
+            <div class="parts-heading">Other costs</div>
+            <p class="parts-hint">Add delivery fees or other expenses separately, including prices and who you paid.</p>
+            <div id="otherCostsList"></div>
+            <button id="addOtherCost" type="button" class="btn-outline-custom">＋ Add other cost</button>
+            <div id="otherCostsTotals" aria-live="polite"></div>
+          </div>
           <div id="serviceCostTotal" class="hint"></div>
         </div>
         <div id="reminderInfo" class="hint mb-3 hidden">Set a target date, target mileage, or both. Leave either one
@@ -1599,10 +1615,11 @@
 <script>
   (() => {
     'use strict';
-    const KEY = 'garage-tracker-v1';
+    const KEY = 'garage-tracker-v3', V2_KEY = 'garage-tracker-v2', LEGACY_KEY = 'garage-tracker-v1';
     const $ = id => document.getElementById(id);
     const today = () => new Date().toLocaleDateString('en-CA');
     const blank = () => ({
+      version: 3,
       vehicle: {name: '', year: '', plateCountry: '', plate: '', vin: ''},
       odometerReadings: [],
       services: [],
@@ -1650,8 +1667,33 @@
     const sortedOdo = () => [...(data.odometerReadings || [])].sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
     const latestOdo = () => sortedOdo()[0] || null;
     const partsTotal = parts => (parts || []).reduce((t, p) => t + (parseNum(p.discountedPrice) ?? parseNum(p.originalPrice) ?? 0), 0);
-    const deliveryTotal = s => parseNum(s.deliveryFee) || 0;
-    const serviceTotal = s => partsTotal(s.parts) + deliveryTotal(s) + (parseNum(s.workshopCost) || 0) || (parseNum(s.cost) || 0);
+    const otherCostsTotal = s => Array.isArray(s.otherCosts) ? partsTotal(s.otherCosts) : parseNum(s.deliveryFee) || 0;
+    const workshopTotal = s => partsTotal(s.workshopServices);
+    const serviceTotal = s => Array.isArray(s.workshopServices)
+      ? partsTotal(s.parts) + otherCostsTotal(s) + workshopTotal(s)
+      : partsTotal(s.parts) + otherCostsTotal(s) + (parseNum(s.workshopCost) || 0) || (parseNum(s.cost) || 0);
+
+    function migrateService(service) {
+      const {workshop, shop, workshopAddress, workshopCost, deliveryFee, ...next} = service;
+      next.otherCosts = Array.isArray(service.otherCosts) ? service.otherCosts.map(cost => ({...cost}))
+        : parseNum(deliveryFee) !== null ? [{name: 'Delivery fees', entity: '', originalPrice: parseNum(deliveryFee), discountedPrice: ''}] : [];
+      if (Array.isArray(service.workshopServices)) {
+        next.workshopServices = service.workshopServices.map(job => ({...job}));
+      } else {
+        const cost = parseNum(workshopCost) || Math.max(0, serviceTotal(service) - partsTotal(service.parts) - otherCostsTotal(service));
+        next.workshopServices = [{
+          name: service.name,
+          workshop: workshop || shop || '',
+          address: workshopAddress || '',
+          date: service.date || '',
+          originalPrice: cost,
+          discountedPrice: '',
+          notes: ''
+        }];
+      }
+      next.cost = serviceTotal(next);
+      return next
+    }
 
     function toast(s) {
       $('toast').textContent = s;
@@ -1698,21 +1740,37 @@
     }
 
     try {
-      const raw = localStorage.getItem(KEY);
+      const current = localStorage.getItem(KEY);
+      const raw = current ?? localStorage.getItem(V2_KEY) ?? localStorage.getItem(LEGACY_KEY);
       if (raw) {
         const v = JSON.parse(raw);
-        if (valid(v)) data = migrate(v)
+        if (valid(v)) {
+          data = migrate(v);
+          if (current === null) persist();
+        }
       }
     } catch (e) {
     }
 
     function valid(v) {
+      if (!v || typeof v !== 'object' || Array.isArray(v) || (v.version !== undefined && v.version !== 1 && v.version !== 2 && v.version !== 3)) return false;
+      const jobsOk = service => !('workshopServices' in service) || (Array.isArray(service.workshopServices) && service.workshopServices.length < 300 && service.workshopServices.every(job =>
+        job && typeof job === 'object' && typeof job.name === 'string' &&
+        ['workshop', 'address', 'date', 'notes'].every(key => job[key] === undefined || typeof job[key] === 'string') &&
+        ['originalPrice', 'discountedPrice'].every(key => job[key] === undefined || job[key] === '' || job[key] === null || parseNum(job[key]) !== null)
+      ));
+      const otherCostsOk = service => !('otherCosts' in service) || (Array.isArray(service.otherCosts) && service.otherCosts.length < 300 && service.otherCosts.every(cost =>
+        cost && typeof cost === 'object' && typeof cost.name === 'string' &&
+        (cost.entity === undefined || typeof cost.entity === 'string') &&
+        ['originalPrice', 'discountedPrice'].every(key => cost[key] === undefined || cost[key] === '' || cost[key] === null || parseNum(cost[key]) !== null)
+      ));
       const odoOk = !('odometerReadings' in v) || (Array.isArray(v.odometerReadings) && v.odometerReadings.length < 10000 && v.odometerReadings.every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.date === 'string' && parseNum(x.km) !== null));
-      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && odoOk && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
+      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && odoOk && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && jobsOk(x) && otherCostsOk(x) && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
     }
 
     function migrate(v) {
       const next = {
+        version: 3,
         vehicle: {name: v.vehicle.name || '', year: v.vehicle.year || '', plateCountry: v.vehicle.plateCountry || '', plate: v.vehicle.plate || '', vin: v.vehicle.vin || ''},
         odometerReadings: Array.isArray(v.odometerReadings) ? v.odometerReadings.map(x => ({
           id: x.id,
@@ -1720,7 +1778,7 @@
           km: parseNum(x.km),
           createdAt: x.createdAt || ''
         })) : [],
-        services: v.services,
+        services: v.services.map(migrateService),
         reminders: v.reminders
       };
       const oldOdo = parseNum(v.vehicle.odometer);
@@ -1782,6 +1840,26 @@
         });
         left.append(details)
       }
+      if (type === 'service' && r.workshopServices?.length) {
+        const details = el('details', 'part-details');
+        details.append(el('summary', '', r.workshopServices.length + ' workshop service' + (r.workshopServices.length === 1 ? '' : 's') + ' · ' + money(workshopTotal(r))));
+        r.workshopServices.forEach(job => {
+          const item = el('div', 'mt-2');
+          item.append(el('strong', '', job.name), el('div', '', [job.workshop, job.date ? fmtDate(job.date) : '', money(partsTotal([job]))].filter(Boolean).join(' · ')));
+          details.append(item)
+        });
+        left.append(details)
+      }
+      if (type === 'service' && r.otherCosts?.length) {
+        const details = el('details', 'part-details');
+        details.append(el('summary', '', r.otherCosts.length + ' other cost' + (r.otherCosts.length === 1 ? '' : 's') + ' · ' + money(otherCostsTotal(r))));
+        r.otherCosts.forEach(cost => {
+          const item = el('div', 'mt-2');
+          item.append(el('strong', '', cost.name), el('div', '', [cost.entity, money(partsTotal([cost]))].filter(Boolean).join(' · ')));
+          details.append(item)
+        });
+        left.append(details)
+      }
       row.append(left);
       if (type === 'reminder') {
         const s = status(r),
@@ -1813,10 +1891,8 @@
               date: today(),
               km: latestOdo()?.km ?? null,
               cost: 0,
-              workshop: '',
-              workshopCost: 0,
-              workshopAddress: '',
-              deliveryFee: 0,
+              workshopServices: [],
+              otherCosts: [],
               parts: [],
               notes: r.notes || ''
             });
@@ -1844,12 +1920,6 @@
     function detailItem(label, value) {
       const item = el('div', 'detail-item');
       item.append(el('small', '', label), el('strong', '', value || '-'));
-      return item
-    }
-
-    function workshopDetailItem(service) {
-      const item = detailItem('Workshop', service.workshop || service.shop || '-');
-      if (service.workshopAddress) item.append(el('span', 'detail-subtext', service.workshopAddress));
       return item
     }
 
@@ -1888,10 +1958,10 @@
         detailItem('Service date', fmtDate(service.date)),
         detailItem('Odometer', service.km !== null && service.km !== '' && service.km !== undefined ? num(Number(service.km)) + ' km' : '-'),
         detailItem('Final cost', money(serviceTotal(service))),
-        workshopDetailItem(service)
+        detailItem('Workshop services', String((service.workshopServices || []).length))
       );
       const costs = el('div', 'cost-breakdown');
-      [['Workshop cost', money(parseNum(service.workshopCost) || 0)], ['Items total', money(partsTotal(service.parts))], ['Delivery fees', money(deliveryTotal(service))]].forEach(([label, value]) => {
+      [['Workshop cost', money(workshopTotal(service))], ['Items total', money(partsTotal(service.parts))], ['Other costs', money(otherCostsTotal(service))]].forEach(([label, value]) => {
         const chip = el('div', 'cost-chip');
         chip.append(document.createTextNode(label + ':'), el('strong', '', value));
         costs.append(chip)
@@ -1900,6 +1970,28 @@
       if (service.notes) {
         body.append(el('div', 'divider'));
         body.append(el('div', 'section-title mb-2', 'Notes'), el('div', 'detail-notes', service.notes))
+      }
+      if (service.workshopServices?.length) {
+        body.append(el('div', 'divider'), el('div', 'section-title mb-2', 'Workshop services'));
+        service.workshopServices.forEach((job, i) => {
+          const card = el('div', 'part-details'), grid = el('div', 'detail-grid');
+          card.append(el('strong', '', (i + 1) + '. ' + job.name));
+          grid.append(detailItem('Workshop', job.workshop), detailItem('Address', job.address),
+            detailItem('Service date', fmtDate(job.date)), paidPriceDetailItem(job));
+          card.append(grid);
+          if (job.notes) card.append(el('div', 'detail-notes', job.notes));
+          body.append(card)
+        })
+      }
+      if (service.otherCosts?.length) {
+        body.append(el('div', 'divider'), el('div', 'section-title mb-2', 'Other costs'));
+        service.otherCosts.forEach((cost, i) => {
+          const card = el('div', 'part-details'), grid = el('div', 'detail-grid');
+          card.append(el('strong', '', (i + 1) + '. ' + cost.name));
+          grid.append(detailItem('Paid to', cost.entity), paidPriceDetailItem(cost));
+          card.append(grid);
+          body.append(card)
+        })
       }
       if (Array.isArray(service.parts) && service.parts.length) {
         body.append(el('div', 'divider'));
@@ -1991,7 +2083,7 @@
       fillList($('dashboardDue'), reminders.slice(0, 3), 'reminder', 'No scheduled maintenance. Add your next service.');
       fillList($('dashboardRecent'), sorted.slice(0, 3), 'service', 'No service records yet.', true);
       const q = $('searchHistory').value.toLowerCase(), cat = $('categoryFilter').value;
-      fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.workshop, x.workshopAddress, x.category, ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
+      fillList($('historyList'), sorted.filter(x => (!cat || x.category === cat) && [x.name, x.notes, x.shop, x.category, ...(x.otherCosts || []).flatMap(cost => [cost.name, cost.entity]), ...(x.workshopServices || []).flatMap(job => [job.name, job.workshop, job.address, job.notes]), ...(x.parts || []).flatMap(p => [p.name, p.model, p.shop, p.notes])].join(' ').toLowerCase().includes(q)), 'service', 'No matching service records.');
       fillList($('scheduleList'), reminders, 'reminder', 'No upcoming maintenance yet.');
       renderOdometerHistory();
       renderServiceDetail()
@@ -2007,15 +2099,23 @@
       resetOdoForm()
     }
 
-    let editorParts = [];
+    let editorParts = [], editorWorkshops = [], editorOtherCosts = [];
 
     function partField(card, label, key, placeholder = '', kind = 'text') {
       const wrap = el('div', 'part-field'), lab = el('label', '', label),
         inp = el(kind === 'textarea' ? 'textarea' : 'input', '');
+      if (kind === 'date') wrap.classList.add('date-field');
+      if (kind === 'textarea') wrap.classList.add('textarea-field');
       if (kind !== 'textarea') {
         inp.type = kind === 'date' ? 'date' : 'text';
-        if (key === 'originalPrice' || key === 'discountedPrice') inp.inputMode = 'decimal'
+        if (key === 'originalPrice' || key === 'discountedPrice') {
+          inp.inputMode = 'decimal';
+          wrap.classList.add('price-field');
+        }
       }
+      inp.id = 'field-' + id();
+      lab.htmlFor = inp.id;
+      inp.maxLength = kind === 'textarea' ? 1000 : 300;
       inp.placeholder = placeholder;
       inp.value = card.part[key] ?? '';
       inp.addEventListener('input', () => {
@@ -2026,13 +2126,25 @@
       return wrap
     }
 
+    function appendPartFields(fields, ...items) {
+      const prices = el('div', 'price-fields');
+      items.forEach(item => {
+        if (item.classList.contains('price-field')) {
+          if (!prices.children.length) fields.append(prices);
+          prices.append(item);
+        } else fields.append(item);
+      });
+    }
+
     function updatePartsTotal() {
       const total = editorParts.reduce((t, p) => t + (parseNum(p.discountedPrice) ?? parseNum(p.originalPrice) ?? 0), 0);
       const original = editorParts.reduce((t, p) => t + (parseNum(p.originalPrice) ?? 0), 0);
-      const delivery = parseNum($('entryDeliveryFee').value) || 0;
+      const other = partsTotal(editorOtherCosts);
+      $('otherCostsTotals').textContent = editorOtherCosts.length ? 'Other costs total: ' + money(other) : 'No other costs added yet.';
       $('partsTotals').textContent = editorParts.length ? ('Items total: ' + money(total) + (original > total ? ' · Saved: ' + money(original - total) : '')) : 'No items added yet.';
-      const workshop = parseNum($('entryWorkshopCost').value) || 0;
-      $('serviceCostTotal').textContent = 'Final maintenance cost: ' + money(total + delivery + workshop)
+      const workshop = partsTotal(editorWorkshops);
+      $('workshopTotals').textContent = editorWorkshops.length ? 'Workshop total: ' + money(workshop) : 'No workshop services added yet.';
+      $('serviceCostTotal').textContent = 'Final maintenance cost: ' + money(total + other + workshop)
     }
 
     function renderParts() {
@@ -2048,7 +2160,7 @@
         }, {title: 'Remove item?', button: 'Remove'});
         top.append(el('div', 'part-title', 'Item ' + (i + 1)), remove);
         const ctx = {part: p};
-        fields.append(partField(ctx, 'Item / product name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand, model / product code', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
+        appendPartFields(fields, partField(ctx, 'Item / product name', 'name', 'e.g. Engine oil filter'), partField(ctx, 'Brand, model / product code', 'model', 'e.g. MANN-FILTER W 712/95'), partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 15,90'), partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 11,50'), partField(ctx, 'Date of purchase', 'purchaseDate', '', 'date'), partField(ctx, 'Shop of purchase', 'shop', 'e.g. AUTODOC'), partField(ctx, 'Additional information', 'notes', 'Notes, compatibility, warranty…', 'textarea'));
         card.append(top, fields);
         list.append(card)
       });
@@ -2068,6 +2180,71 @@
       renderParts()
     });
 
+    function renderWorkshops() {
+      const list = $('workshopList');
+      list.replaceChildren();
+      editorWorkshops.forEach((job, i) => {
+        const card = el('div', 'part-card'), top = el('div', 'part-top'), fields = el('div', 'part-fields');
+        const remove = el('button', 'part-remove', 'Remove');
+        remove.type = 'button';
+        remove.onclick = () => askConfirm('Remove this workshop service from the record?', () => {
+          editorWorkshops.splice(i, 1);
+          renderWorkshops()
+        }, {title: 'Remove workshop service?', button: 'Remove'});
+        top.append(el('div', 'part-title', 'Workshop service ' + (i + 1)), remove);
+        const ctx = {part: job};
+        appendPartFields(fields,
+          partField(ctx, 'Service name', 'name', 'e.g. Wheel alignment'),
+          partField(ctx, 'Workshop', 'workshop', 'Workshop name'),
+          partField(ctx, 'Service date', 'date', '', 'date'),
+          partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 80,00'),
+          partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 65,00'),
+          partField(ctx, 'Workshop full address', 'address', 'Street, city, country', 'textarea'),
+          partField(ctx, 'Additional information', 'notes', 'Work performed, warranty…', 'textarea')
+        );
+        card.append(top, fields);
+        list.append(card)
+      });
+      updatePartsTotal()
+    }
+
+    $('addWorkshopService').addEventListener('click', () => {
+      if (editorWorkshops.length >= 299) return toast('Maximum workshop services reached');
+      editorWorkshops.push({name: '', workshop: '', address: '', date: $('entryDate').value || '', originalPrice: '', discountedPrice: '', notes: ''});
+      renderWorkshops()
+    });
+
+    function renderOtherCosts() {
+      const list = $('otherCostsList');
+      list.replaceChildren();
+      editorOtherCosts.forEach((cost, i) => {
+        const card = el('div', 'part-card'), top = el('div', 'part-top'), fields = el('div', 'part-fields');
+        const remove = el('button', 'part-remove', 'Remove');
+        remove.type = 'button';
+        remove.onclick = () => askConfirm('Remove this cost from the service record?', () => {
+          editorOtherCosts.splice(i, 1);
+          renderOtherCosts()
+        }, {title: 'Remove other cost?', button: 'Remove'});
+        top.append(el('div', 'part-title', 'Other cost ' + (i + 1)), remove);
+        const ctx = {part: cost};
+        appendPartFields(fields,
+          partField(ctx, 'Cost name', 'name', 'e.g. Delivery fees'),
+          partField(ctx, 'Paid to', 'entity', 'Company or person'),
+          partField(ctx, 'Original price (€)', 'originalPrice', 'e.g. 10,00'),
+          partField(ctx, 'Discounted / paid price (€)', 'discountedPrice', 'e.g. 7,50')
+        );
+        card.append(top, fields);
+        list.append(card)
+      });
+      updatePartsTotal()
+    }
+
+    $('addOtherCost').addEventListener('click', () => {
+      if (editorOtherCosts.length >= 299) return toast('Maximum other costs reached');
+      editorOtherCosts.push({name: '', entity: '', originalPrice: '', discountedPrice: ''});
+      renderOtherCosts()
+    });
+
     function openEditor(type, record) {
       returnTab = tab;
       $('entryForm').reset();
@@ -2077,7 +2254,11 @@
       $('serviceFields').classList.toggle('hidden', type !== 'service');
       $('partsSection').classList.toggle('hidden', type !== 'service');
       editorParts = type === 'service' && Array.isArray(record?.parts) ? record.parts.map(p => ({...p})) : [];
+      editorWorkshops = type === 'service' ? (record?.workshopServices || []).map(job => ({...job})) : [];
+      editorOtherCosts = type === 'service' ? (record?.otherCosts || []).map(cost => ({...cost})) : [];
       renderParts();
+      renderWorkshops();
+      renderOtherCosts();
       $('reminderInfo').classList.toggle('hidden', type === 'service');
       $('dateLabel').textContent = type === 'service' ? 'Service date *' : 'Target date';
       $('kmLabel').textContent = type === 'service' ? 'Odometer (km)' : 'Target odometer (km)';
@@ -2086,18 +2267,13 @@
       $('entryName').value = record?.name || '';
       $('entryCategory').value = record?.category || 'Oil & filters';
       $('entryKm').value = record?.km ?? '';
-      $('entryWorkshopCost').value = record?.workshopCost ?? '';
-      $('entryWorkshop').value = record?.workshop || record?.shop || '';
-      $('entryWorkshopAddress').value = record?.workshopAddress || '';
-      $('entryDeliveryFee').value = record?.deliveryFee ?? '';
       $('entryNotes').value = record?.notes || '';
+      updatePartsTotal();
       show('editor')
     }
 
     $('newService').onclick = $('newService2').onclick = () => openEditor('service');
     $('newReminder').onclick = $('newReminder2').onclick = () => openEditor('reminder');
-    $('entryWorkshopCost').addEventListener('input', updatePartsTotal);
-    $('entryDeliveryFee').addEventListener('input', updatePartsTotal);
     $('backBtn').onclick = () => show(returnTab);
     $('detailBackBtn').onclick = () => show(detailReturnTab);
     $('detailEditBtn').onclick = () => {
@@ -2152,12 +2328,9 @@
     $('entryForm').addEventListener('submit', e => {
       e.preventDefault();
       const type = $('entryType').value;
-      const kmRaw = $('entryKm').value.trim(), workshopCostRaw = $('entryWorkshopCost').value.trim(), deliveryRaw = $('entryDeliveryFee').value.trim(), km = parseNum(kmRaw),
-        workshopCost = parseNum(workshopCostRaw), deliveryFee = parseNum(deliveryRaw);
+      const kmRaw = $('entryKm').value.trim(), km = parseNum(kmRaw);
       const entryDateRaw = $('entryDate').value.trim(), entryDate = parseUiDate(entryDateRaw);
       if (kmRaw && km === null) return toast('Enter a valid mileage');
-      if (type === 'service' && workshopCostRaw && workshopCost === null) return toast('Enter a valid workshop cost');
-      if (type === 'service' && deliveryRaw && deliveryFee === null) return toast('Enter valid delivery fees');
       if (type === 'service' && !entryDate) return toast('Enter a valid service date');
       if (type === 'reminder' && entryDateRaw && !entryDate) return toast('Enter a valid target date');
       if (type === 'reminder' && !entryDateRaw && km === null) return toast('Enter a target date or mileage');
@@ -2181,10 +2354,23 @@
           if (p.originalPrice !== '' && p.discountedPrice !== '' && parseNum(p.discountedPrice) > parseNum(p.originalPrice)) return toast('Paid price cannot exceed original price')
         }
         r.parts = editorParts.map(p => ({...p, name: p.name.trim()}));
-        r.workshop = $('entryWorkshop').value.trim();
-        r.workshopAddress = $('entryWorkshopAddress').value.trim();
-        r.workshopCost = workshopCost || 0;
-        r.deliveryFee = deliveryFee || 0;
+        for (const job of editorWorkshops) {
+          if (!job.name.trim()) return toast('Enter a name for every workshop service');
+          if (job.date && !parseUiDate(job.date)) return toast('Enter valid workshop service dates');
+          for (const key of ['originalPrice', 'discountedPrice']) {
+            if (job[key] !== '' && job[key] != null && parseNum(job[key]) === null) return toast('Check workshop prices: use a number');
+          }
+          if (parseNum(job.originalPrice) !== null && parseNum(job.discountedPrice) !== null && parseNum(job.discountedPrice) > parseNum(job.originalPrice)) return toast('Workshop paid price cannot exceed original price');
+        }
+        r.workshopServices = editorWorkshops.map(job => ({...job, name: job.name.trim(), date: parseUiDate(job.date) || ''}));
+        for (const cost of editorOtherCosts) {
+          if (!cost.name.trim()) return toast('Enter a name for every other cost');
+          for (const key of ['originalPrice', 'discountedPrice']) {
+            if (cost[key] !== '' && cost[key] != null && parseNum(cost[key]) === null) return toast('Check other cost prices: use a number');
+          }
+          if (parseNum(cost.originalPrice) !== null && parseNum(cost.discountedPrice) !== null && parseNum(cost.discountedPrice) > parseNum(cost.originalPrice)) return toast('Other cost paid price cannot exceed original price');
+        }
+        r.otherCosts = editorOtherCosts.map(cost => ({...cost, name: cost.name.trim(), entity: (cost.entity || '').trim()}));
         r.cost = serviceTotal(r)
       }
       const key = type === 'service' ? 'services' : 'reminders';
@@ -2206,7 +2392,7 @@
     }
 
     $('exportBtn').onclick = () => {
-      download('garage-backup-' + today() + '.json', JSON.stringify({
+      download('garage-backup-v3-' + today() + '.json', JSON.stringify({
         ...data,
         exportedAt: new Date().toISOString()
       }, null, 2), 'application/json');
@@ -2233,7 +2419,7 @@
       }
     });
     $('exportCsv').onclick = () => {
-      const rows = [['Date', 'Service', 'Category', 'Odometer km', 'Final cost EUR', 'Items EUR', 'Delivery EUR', 'Workshop', 'Workshop address', 'Workshop cost EUR', 'Notes', 'Items & products (JSON)'], ...data.services.map(x => [x.date, x.name, x.category, x.km ?? '', serviceTotal(x), partsTotal(x.parts), deliveryTotal(x), x.workshop || x.shop || '', x.workshopAddress || '', x.workshopCost ?? 0, x.notes || '', JSON.stringify(x.parts || [])])];
+      const rows = [['Date', 'Service', 'Category', 'Odometer km', 'Final cost EUR', 'Items EUR', 'Other costs EUR', 'Workshop services EUR', 'Notes', 'Items & products (JSON)', 'Workshop services (JSON)', 'Other costs (JSON)'], ...data.services.map(x => [x.date, x.name, x.category, x.km ?? '', serviceTotal(x), partsTotal(x.parts), otherCostsTotal(x), workshopTotal(x), x.notes || '', JSON.stringify(x.parts || []), JSON.stringify(x.workshopServices || []), JSON.stringify(x.otherCosts || [])])];
       const csv = '\ufeff' + rows.map(row => row.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
       download('garage-services-' + today() + '.csv', csv, 'text/csv;charset=utf-8');
       toast('CSV prepared')
