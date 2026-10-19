@@ -1292,6 +1292,28 @@
       }
     }
 
+    .document-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .document-info {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .document-row .mini-btn {
+      flex-shrink: 0;
+    }
+
+    #documentsList {
+      margin: 12px 0;
+    }
+
     /* Persistent desktop sidebar, with the same four destinations on mobile. */
     .skip-link {
       position: fixed;
@@ -1503,6 +1525,7 @@
   </div>
 </aside>
 <main id="mainContent" class="app" tabindex="-1">
+  <p id="storageNotice" class="panel hidden" role="alert"></p>
   <section id="vehicleHeader" class="panel hero mb-3">
     <div class="eyebrow mb-2">YOUR VEHICLE</div>
     <div class="d-flex justify-content-between align-items-start gap-2">
@@ -1657,7 +1680,7 @@
     <div class="panel mb-3">
       <div class="section-title mb-2">Backup your data</div>
       <p class="hint">Your records stay in this browser on this device. Browser data can be cleared, so export a JSON
-        backup regularly to keep your records safe.</p>
+        backup regularly to keep your records safe. JSON backups include all attached documents.</p>
       <div class="d-grid gap-2">
         <button id="exportBtn" class="btn-mint">↓ Export JSON backup</button>
         <button id="importBtn" class="btn-outline-custom">↑ Import JSON backup</button>
@@ -1724,6 +1747,13 @@
           </div>
           <div id="serviceCostTotal" class="hint"></div>
         </div>
+        <div id="documentsSection" class="form-wide">
+          <label class="section-title" for="documentFiles">Documents <span class="hint">(optional)</span></label>
+          <p id="documentsHint" class="hint">Attach invoices, receipts or inspection reports. PDF, JPG, PNG or WebP · Up to 30 MB each · 20 documents per service.</p>
+          <input id="documentFiles" type="file" class="form-control" multiple accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" aria-describedby="documentsHint">
+          <div id="documentsList" aria-live="polite"></div>
+          <p class="hint">PDF images and photos use lossy compression (50% quality, up to 2000 pixels per side) when smaller. PDF text and links stay intact. Downloads contain the compressed file; keep originals separately. Save this service to apply changes. All documents are included in your JSON backup.</p>
+        </div>
         <div id="reminderInfo" class="hint mb-3 hidden">Set a target date, target mileage, or both. Leave either one
           blank if not needed.
         </div>
@@ -1747,6 +1777,7 @@
   </div>
 </div>
 <div id="toast" class="toastline hidden" role="status"></div>
+<script src="alex-compressor-util/compressor.js"></script>
 <script>
   (() => {
     'use strict';
@@ -1851,9 +1882,9 @@
         $('garageCancel').removeEventListener('click', cancel)
       }
 
-      function accept() {
+      async function accept() {
         close();
-        action()
+        await action()
       }
 
       function cancel() {
@@ -1864,14 +1895,366 @@
       $('garageCancel').addEventListener('click', cancel)
     }
 
-    function persist() {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(data));
-        return true
-      } catch (e) {
-        toast('Storage unavailable. Export a backup.');
-        return false
+    const MAX_DOCUMENT_BYTES = 30 * 1024 * 1024;
+    const MAX_DOCUMENTS = 20;
+    const MAX_TOTAL_DOCUMENT_BYTES = 100 * 1024 * 1024;
+    const MAX_BACKUP_BYTES = 200 * 1024 * 1024;
+    const documentTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
+    let database = null, committedData = null, editorDocuments = [], storageBusy = false, databaseRevision = 0;
+    const copyData = value => JSON.parse(JSON.stringify(value));
+
+    function storageLock(locked) {
+      storageBusy = locked;
+      $('mainContent').inert = locked;
+      document.querySelectorAll('.sidebar').forEach(node => { node.inert = locked; });
+      $('mainContent').setAttribute('aria-busy', String(locked));
+    }
+
+    function transactionDone(tx) {
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onabort = () => reject(tx.error || Error('Storage operation was cancelled.'));
+        tx.onerror = () => {}; // The abort event reports transaction failures.
+      });
+    }
+
+    function requestResult(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function initializeStorage() {
+      committedData = copyData(data);
+      if (typeof indexedDB === 'undefined') {
+        try {
+          if (localStorage.getItem('garage-indexeddb-migrated')) {
+            storageLock(true);
+            $('storageNotice').textContent = 'Saved records need browser database access. Restore access or open Garage in the browser you used previously.';
+            $('storageNotice').classList.remove('hidden');
+            return;
+          }
+        } catch (error) { /* Continue with record-only storage when available. */ }
+        $('documentsHint').textContent = 'Document storage is unavailable in this browser. You can still manage records.';
+        $('documentFiles').disabled = true;
+        return;
       }
+      storageLock(true);
+      try {
+        database = await new Promise((resolve, reject) => {
+          const request = indexedDB.open('garage-tracker', 1);
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore('state');
+            request.result.createObjectStore('documents', {keyPath: 'id'});
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+          request.onblocked = () => {
+            $('storageNotice').textContent = 'Close other Garage tabs, then reload to finish opening storage.';
+            $('storageNotice').classList.remove('hidden');
+          };
+        });
+        database.onversionchange = () => {
+          database.close();
+          storageLock(true);
+          $('storageNotice').textContent = 'Garage storage changed in another tab. Reload this page to continue.';
+          $('storageNotice').classList.remove('hidden');
+        };
+        // Read and migrate atomically so simultaneous first loads cannot overwrite each other.
+        const tx = database.transaction('state', 'readwrite'), done = transactionDone(tx);
+        const store = tx.objectStore('state'), savedRequest = store.get('current'), revisionRequest = store.get('revision');
+        let storedData;
+        savedRequest.onsuccess = () => {
+          storedData = savedRequest.result;
+          if (storedData !== undefined && !valid(storedData)) tx.abort();
+        };
+        revisionRequest.onsuccess = () => {
+          databaseRevision = revisionRequest.result || 0;
+          if (storedData === undefined) {
+            store.put(copyData(data), 'current');
+            store.put(++databaseRevision, 'revision');
+          }
+        };
+        await done;
+        if (storedData !== undefined) data = migrate(storedData);
+        try { localStorage.setItem('garage-indexeddb-migrated', 'true'); } catch (error) { /* IndexedDB remains authoritative. */ }
+        committedData = copyData(data);
+        $('storageNotice').classList.add('hidden');
+        storageLock(false);
+        render();
+      } catch (error) {
+        // Never fall back to an old localStorage snapshot after a database-open failure.
+        $('storageNotice').textContent = 'Could not open saved records. Reload this page or check browser storage permissions. Your saved data has not been replaced.';
+        $('storageNotice').classList.remove('hidden');
+      }
+    }
+
+    function storedDocumentIsValid(doc) {
+      return !!doc && doc.blob instanceof Blob && doc.blob.size > 0 &&
+        (doc.compression === 'lossy' ? doc.blob.size < doc.size :
+          (doc.compression === undefined || doc.compression === 'none') && doc.blob.size === doc.size);
+    }
+
+    const validDocumentHash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+
+    async function hashDocument(blob) {
+      if (typeof crypto === 'undefined' || !crypto.subtle) throw Error('Document integrity checks need browser cryptography support. Open Garage over HTTPS or in a supported browser.');
+      const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+      return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function documentBlob(doc) {
+      if (!storedDocumentIsValid(doc)) throw Error('Invalid stored document.');
+      const blob = doc.blob;
+      if (doc.sha256 !== undefined && (!validDocumentHash(doc.sha256) || await hashDocument(blob) !== doc.sha256)) {
+        throw Error('Document integrity check failed: SHA-256 does not match.');
+      }
+      return blob;
+    }
+
+    async function compressDocument(doc) {
+      if (!storedDocumentIsValid(doc)) throw Error('Invalid document content.');
+      const original = await documentBlob(doc);
+      if (doc.compressionVersion === 2 && doc.sha256 !== undefined) return doc;
+      let blob = original, compression = doc.compression === 'lossy' ? 'lossy' : 'none';
+      try {
+        if (typeof AlexCompressor === 'undefined') throw Error('The compression engine is unavailable. Reload Garage and try again.');
+        const candidate = await AlexCompressor.compress(original, doc.type);
+        if (!(candidate instanceof Blob) || !candidate.size) throw Error('The compression engine returned an empty document.');
+        if (candidate.size < original.size) { blob = candidate; compression = 'lossy'; }
+      } catch (error) {
+        throw Error('Could not compress ' + (doc.name || 'document') + ': ' + error.message);
+      }
+      return {...doc, blob, compression, compressionVersion: 2, sha256: await hashDocument(blob)};
+    }
+
+    async function readDocuments(ids) {
+      if (!ids.length) return [];
+      if (!database) throw Error('Document storage is unavailable in this browser.');
+      const tx = database.transaction(['state', 'documents'], 'readonly'), done = transactionDone(tx);
+      const requests = ids.map(id => requestResult(tx.objectStore('documents').get(id)));
+      const [, revision, ...results] = await Promise.all([done, requestResult(tx.objectStore('state').get('revision')), ...requests]);
+      if (results.some(doc => !storedDocumentIsValid(doc))) throw Error('An attached document is missing or unreadable.');
+      const upgrades = [];
+      for (let i = 0; i < results.length; i++) {
+        if (results[i].sha256 === undefined || results[i].compressionVersion !== 2) {
+          results[i] = await compressDocument(results[i]);
+          upgrades.push(results[i]);
+        }
+      }
+      if (upgrades.length) {
+        // Upgrade earlier compression results without overwriting a concurrent save or restore.
+        const tx = database.transaction(['state', 'documents'], 'readwrite'), done = transactionDone(tx);
+        const request = tx.objectStore('state').get('revision');
+        request.onsuccess = () => {
+          if (request.result === revision) upgrades.forEach(doc => tx.objectStore('documents').put(doc));
+        };
+        await done;
+      }
+      return results;
+    }
+
+    function documentMetadata(doc) {
+      const {id, name, type, size, addedAt} = doc;
+      return {id, name, type, size, addedAt};
+    }
+
+    function documentSize(bytes) {
+      return bytes < 1024 * 1024 ? Math.max(1, Math.ceil(bytes / 1024)) + ' KB' : (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function documentSizeHint(doc) {
+      const label = el('div', 'hint', documentSize(doc.size) + ' original');
+      if (doc.blob || !database) return label;
+      readDocuments([doc.id]).then(([stored]) => {
+        label.textContent = documentSize(stored.blob.size) + ' saved' +
+          (stored.blob.size < doc.size ? ' (' + documentSize(doc.size) + ' original)' : '');
+      }).catch(() => { label.textContent = 'Saved size unavailable (' + documentSize(doc.size) + ' original)'; });
+      return label;
+    }
+
+    function renderDocuments() {
+      const list = $('documentsList');
+      list.replaceChildren();
+      if (!editorDocuments.length) list.append(el('p', 'hint', 'No documents attached.'));
+      editorDocuments.forEach(doc => {
+        const row = el('div', 'document-row'), info = el('div', 'document-info');
+        info.append(el('strong', '', doc.name), documentSizeHint(doc));
+        const remove = el('button', 'mini-btn danger', 'Remove');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', 'Remove ' + doc.name);
+        remove.onclick = () => {
+          editorDocuments = editorDocuments.filter(item => item.id !== doc.id);
+          renderDocuments();
+        };
+        row.append(info, remove);
+        list.append(row);
+      });
+    }
+
+    $('documentFiles').addEventListener('change', e => {
+      try {
+        if (!database) throw Error('Document storage is unavailable in this browser.');
+        const files = Array.from(e.target.files || []);
+        if (editorDocuments.length + files.length > MAX_DOCUMENTS) throw Error('Attach up to 20 documents per service.');
+        const additions = files.map(file => {
+          const type = file.type || ({pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp'})[file.name.split('.').pop().toLowerCase()];
+          if (!file.name || file.name.length > 255) throw Error('Document names must be between 1 and 255 characters.');
+          if (!documentTypes.has(type)) throw Error('Choose PDF, JPG, PNG or WebP files.');
+          if (!file.size || file.size > MAX_DOCUMENT_BYTES) throw Error('Each document must be between 1 byte and 30 MB.');
+          return {...documentMetadata({id: id(), name: file.name, type, size: file.size, addedAt: new Date().toISOString()}), blob: file};
+        });
+        editorDocuments.push(...additions);
+        renderDocuments();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    async function downloadDocument(doc) {
+      try {
+        const [stored] = await readDocuments([doc.id]);
+        download(doc.name, await documentBlob(stored), doc.type);
+      } catch (error) {
+        toast('Could not open document: ' + error.message);
+      }
+    }
+
+    async function encodeDocument(original) {
+      // Existing uncompressed attachments also benefit immediately on export.
+      const doc = await compressDocument(original);
+      const bytes = new Uint8Array(await doc.blob.arrayBuffer());
+      let binary = '';
+      for (let offset = 0; offset < bytes.length; offset += 32768) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+      }
+      return {...documentMetadata(doc), serviceId: doc.serviceId, compression: doc.compression, compressionVersion: doc.compressionVersion, storedSize: doc.blob.size, sha256: doc.sha256, content: btoa(binary)};
+    }
+
+    async function decodeBackupDocuments(incoming) {
+      const references = new Map();
+      incoming.services.forEach(service => (service.documents || []).forEach(doc => {
+        if (references.has(doc.id)) throw Error('Duplicate document reference.');
+        references.set(doc.id, {serviceId: service.id, ...documentMetadata(doc)});
+      }));
+      if (incoming.documents !== undefined && !Array.isArray(incoming.documents)) throw Error('Invalid documents in backup.');
+      const documents = incoming.documents || [];
+      if (documents.length !== references.size) throw Error('Backup is missing attached documents.');
+      const seen = new Set();
+      let total = 0;
+      const decoded = [];
+      for (const doc of documents) {
+        const reference = references.get(doc?.id);
+        if (!reference || seen.has(doc.id) || doc.serviceId !== reference.serviceId ||
+            ['name', 'type', 'size', 'addedAt'].some(key => doc[key] !== reference[key])) throw Error('Invalid document reference.');
+        seen.add(doc.id);
+        const compression = doc.compression ?? 'none', storedSize = doc.storedSize ?? doc.size;
+        if ((doc.compressionVersion !== undefined && doc.compressionVersion !== 2) ||
+            !['none', 'lossy'].includes(compression) || !Number.isInteger(storedSize) || storedSize < 1 ||
+            (compression === 'lossy' ? storedSize >= doc.size : storedSize !== doc.size)) throw Error('Invalid document compression.');
+        if (typeof doc.content !== 'string' || doc.content.length !== 4 * Math.ceil(storedSize / 3) ||
+            /[^A-Za-z0-9+/=]/.test(doc.content)) throw Error('Invalid document content.');
+        const binary = atob(doc.content);
+        if (binary.length !== storedSize) throw Error('Document size does not match its content.');
+        total += doc.size;
+        if (total > MAX_TOTAL_DOCUMENT_BYTES) throw Error('Documents exceed the 100 MB storage limit.');
+        const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+        if ((incoming.version >= 6 || doc.sha256 !== undefined) && !validDocumentHash(doc.sha256)) throw Error('Invalid or missing document SHA-256 hash.');
+        const stored = {...reference, ...(doc.sha256 === undefined ? {} : {sha256: doc.sha256}), compression, compressionVersion: doc.compressionVersion, blob: new Blob([bytes], {type: doc.type})};
+        await documentBlob(stored); // Verify saved file contents before replacement.
+        decoded.push(stored);
+      }
+      return decoded;
+    }
+
+    function persist({documents = [], replaceDocuments = false} = {}) {
+      if (!database) {
+        try {
+          if (data.services.some(service => service.documents?.length)) throw Error('Document storage is unavailable.');
+          localStorage.setItem(KEY, JSON.stringify(data));
+          committedData = copyData(data);
+          return true;
+        } catch (error) {
+          if (committedData) data = copyData(committedData);
+          toast('Could not save. Your previous records are unchanged.');
+          return false;
+        }
+      }
+      const snapshot = copyData(data);
+      const references = new Map();
+      let total = 0;
+      for (const service of snapshot.services) {
+        for (const doc of service.documents || []) {
+          references.set(doc.id, {...doc, serviceId: service.id});
+          total += doc.size;
+        }
+      }
+      if (total > MAX_TOTAL_DOCUMENT_BYTES) {
+        data = copyData(committedData);
+        toast('Documents exceed the 100 MB storage limit. Remove some attachments before saving.');
+        return false;
+      }
+      storageLock(true);
+      return (async () => {
+        try {
+          // Stream work must finish before opening the atomic IndexedDB transaction.
+          const prepared = [];
+          for (const doc of documents) prepared.push(await compressDocument(doc));
+          const tx = database.transaction(['state', 'documents'], 'readwrite'), done = transactionDone(tx);
+          let stale = false;
+          try {
+            const revisionRequest = tx.objectStore('state').get('revision');
+            revisionRequest.onsuccess = () => {
+              if ((revisionRequest.result || 0) !== databaseRevision) {
+                stale = true;
+                tx.abort();
+              }
+            };
+            const store = tx.objectStore('documents');
+            if (replaceDocuments) store.clear();
+            prepared.forEach(doc => store.put(doc));
+            // Check every reference in the same transaction, and remove orphaned files.
+            for (const [id, reference] of references) {
+              const request = store.get(id);
+              request.onsuccess = () => {
+                const stored = request.result;
+                if (!stored || stored.serviceId !== reference.serviceId || stored.size !== reference.size ||
+                    !storedDocumentIsValid(stored)) tx.abort();
+              };
+            }
+            const cursor = store.openCursor();
+            cursor.onsuccess = () => {
+              const item = cursor.result;
+              if (!item) return;
+              if (!references.has(item.key)) item.delete();
+              item.continue();
+            };
+            tx.objectStore('state').put(snapshot, 'current');
+            tx.objectStore('state').put(databaseRevision + 1, 'revision');
+          } catch (error) {
+            try { tx.abort(); } catch (abortError) { /* It may already be aborted. */ }
+            await done.catch(() => {});
+            throw error;
+          }
+          try { await done; } catch (error) {
+            if (stale) throw Error('Records changed in another tab. Reload this page before saving.');
+            throw error;
+          }
+          databaseRevision++;
+          committedData = snapshot;
+          return true;
+        } catch (error) {
+          data = copyData(committedData);
+          render();
+          toast(error.message.startsWith('Could not compress') ? error.message : error.message.includes('another tab') ? error.message : 'Could not save. Storage may be full or unavailable. Your previous records and documents are unchanged.');
+          return false;
+        } finally {
+          storageLock(false);
+        }
+      })();
     }
 
     try {
@@ -1888,7 +2271,7 @@
     }
 
     function valid(v) {
-      if (!v || typeof v !== 'object' || Array.isArray(v) || (v.version !== undefined && v.version !== 1 && v.version !== 2 && v.version !== 3)) return false;
+      if (!v || typeof v !== 'object' || Array.isArray(v) || (v.version !== undefined && v.version !== 1 && v.version !== 2 && v.version !== 3 && v.version !== 4 && v.version !== 5 && v.version !== 6 && v.version !== 7)) return false;
       const jobsOk = service => !('workshopServices' in service) || (Array.isArray(service.workshopServices) && service.workshopServices.length < 300 && service.workshopServices.every(job =>
         job && typeof job === 'object' && typeof job.name === 'string' &&
         ['workshop', 'address', 'date', 'notes'].every(key => job[key] === undefined || typeof job[key] === 'string') &&
@@ -1899,8 +2282,16 @@
         (cost.entity === undefined || typeof cost.entity === 'string') &&
         ['originalPrice', 'discountedPrice'].every(key => cost[key] === undefined || cost[key] === '' || cost[key] === null || parseNum(cost[key]) !== null)
       ));
+      const documentIds = new Set();
+      const documentsOk = service => !('documents' in service) || (Array.isArray(service.documents) && service.documents.length <= MAX_DOCUMENTS && service.documents.every(doc => {
+        if (!doc || typeof doc.id !== 'string' || !doc.id || documentIds.has(doc.id) ||
+            typeof doc.name !== 'string' || !doc.name || doc.name.length > 255 || !documentTypes.has(doc.type) ||
+            !Number.isInteger(doc.size) || doc.size < 1 || doc.size > MAX_DOCUMENT_BYTES || typeof doc.addedAt !== 'string') return false;
+        documentIds.add(doc.id);
+        return true;
+      }));
       const odoOk = !('odometerReadings' in v) || (Array.isArray(v.odometerReadings) && v.odometerReadings.length < 10000 && v.odometerReadings.every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.date === 'string' && parseNum(x.km) !== null));
-      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && odoOk && v.services.length < 10000 && v.reminders.length < 10000 && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && jobsOk(x) && otherCostsOk(x) && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
+      return !!v && typeof v === 'object' && !Array.isArray(v) && v.vehicle && typeof v.vehicle.name === 'string' && Array.isArray(v.services) && Array.isArray(v.reminders) && odoOk && v.services.length < 10000 && v.reminders.length < 10000 && v.reminders.every(record => !record?.documents?.length) && [...v.services, ...v.reminders].every(x => x && typeof x === 'object' && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.category === 'string' && jobsOk(x) && otherCostsOk(x) && documentsOk(x) && (!x.notes || typeof x.notes === 'string') && (!('parts' in x) || (Array.isArray(x.parts) && x.parts.length < 300 && x.parts.every(p => p && typeof p === 'object' && typeof p.name === 'string'))))
     }
 
     function migrate(v) {
@@ -1953,9 +2344,9 @@
     }
 
     function deleteRecord(type, record, afterDelete = () => render()) {
-      askConfirm('This record will be permanently deleted.', () => {
+      askConfirm('This record and any attached documents will be permanently deleted.', async () => {
         data[type === 'service' ? 'services' : 'reminders'] = data[type === 'service' ? 'services' : 'reminders'].filter(x => x.id !== record.id);
-        persist();
+        if (!await persist()) return;
         afterDelete();
         toast('Deleted')
       }, {title: 'Delete record?', button: 'Delete'})
@@ -2025,7 +2416,7 @@
       if (type === 'reminder') {
         const done = el('button', 'mini-btn', 'Mark done');
         done.addEventListener('click', () => {
-          askConfirm('This reminder will be moved to your service history.', () => {
+          askConfirm('This reminder will be moved to your service history.', async () => {
             const completed = {
               id: id(),
               name: r.name,
@@ -2040,7 +2431,7 @@
             completed.cost = serviceTotal(completed);
             data.services.unshift(completed);
             data.reminders = data.reminders.filter(x => x.id !== r.id);
-            persist();
+            if (!await persist()) return;
             render();
             toast('Added to service history')
           }, {title: 'Mark as completed?', button: 'Mark done', safe: true})
@@ -2110,6 +2501,19 @@
         costs.append(chip)
       });
       body.append(heading, grid, costs);
+      if (service.documents?.length) {
+        body.append(el('div', 'divider'), el('div', 'section-title mb-2', 'Documents'));
+        service.documents.forEach(doc => {
+          const row = el('div', 'document-row'), info = el('div', 'document-info');
+          info.append(el('strong', '', doc.name), documentSizeHint(doc));
+          const button = el('button', 'mini-btn', 'Download');
+          button.type = 'button';
+          button.setAttribute('aria-label', 'Download ' + doc.name);
+          button.onclick = () => downloadDocument(doc);
+          row.append(info, button);
+          body.append(row);
+        });
+      }
       if (service.notes) {
         body.append(el('div', 'divider'));
         body.append(el('div', 'section-title mb-2', 'Notes'), el('div', 'detail-notes', service.notes))
@@ -2180,9 +2584,9 @@
         });
         const del = el('button', 'mini-btn danger', 'Delete');
         del.addEventListener('click', () => {
-          askConfirm('This odometer reading will be permanently deleted.', () => {
+          askConfirm('This odometer reading will be permanently deleted.', async () => {
             data.odometerReadings = (data.odometerReadings || []).filter(x => x.id !== r.id);
-            persist();
+            if (!await persist()) return;
             render();
             toast('Odometer reading deleted')
           }, {title: 'Delete reading?', button: 'Delete'})
@@ -2396,6 +2800,10 @@
       $('editorTitle').textContent = (record ? 'Edit ' : 'Add ') + (type === 'service' ? 'service' : 'maintenance reminder');
       $('serviceFields').classList.toggle('hidden', type !== 'service');
       $('partsSection').classList.remove('hidden');
+      $('documentsSection').classList.toggle('hidden', type !== 'service');
+      editorDocuments = type === 'service' ? (record?.documents || []).map(doc => ({...doc})) : [];
+      $('documentFiles').value = '';
+      renderDocuments();
       editorParts = Array.isArray(record?.parts) ? record.parts.map(p => ({...p})) : [];
       editorWorkshops = type === 'service' ? (record?.workshopServices || []).map(job => ({...job})) : [];
       editorOtherCosts = type === 'service' ? (record?.otherCosts || []).map(cost => ({...cost})) : [];
@@ -2432,7 +2840,7 @@
     };
     $('searchHistory').addEventListener('input', render);
     $('categoryFilter').addEventListener('change', render);
-    $('vehicleForm').addEventListener('submit', e => {
+    $('vehicleForm').addEventListener('submit', async e => {
       e.preventDefault();
       data.vehicle = {
         name: $('carName').value.trim(),
@@ -2441,11 +2849,11 @@
         plate: $('carPlate').value.trim(),
         vin: $('carVin').value.trim().toUpperCase()
       };
-      persist();
+      if (!await persist()) return;
       render();
       toast('Vehicle saved')
     });
-    $('odoForm').addEventListener('submit', e => {
+    $('odoForm').addEventListener('submit', async e => {
       e.preventDefault();
       const kmRaw = $('odoKm').value.trim(), km = parseNum(kmRaw);
       if (km === null) return toast('Enter a valid odometer');
@@ -2462,13 +2870,13 @@
       } else {
         data.odometerReadings.push({id: id(), date: odoDate, km, createdAt: new Date().toISOString()})
       }
-      persist();
+      if (!await persist()) return;
       resetOdoForm();
       render();
       toast(existingId ? 'Odometer reading saved' : 'Odometer reading added')
     });
     $('odoCancel').addEventListener('click', resetOdoForm);
-    $('entryForm').addEventListener('submit', e => {
+    $('entryForm').addEventListener('submit', async e => {
       e.preventDefault();
       const type = $('entryType').value;
       const kmRaw = $('entryKm').value.trim(), km = parseNum(kmRaw);
@@ -2514,12 +2922,14 @@
           if (parseNum(cost.originalPrice) !== null && parseNum(cost.discountedPrice) !== null && parseNum(cost.discountedPrice) > parseNum(cost.originalPrice)) return toast('Other cost final price cannot exceed original price');
         }
         r.otherCosts = editorOtherCosts.map(cost => ({...cost, name: cost.name.trim(), entity: (cost.entity || '').trim()}));
-        r.cost = serviceTotal(r)
+        r.cost = serviceTotal(r);
+        r.documents = editorDocuments.map(documentMetadata);
       }
       const key = type === 'service' ? 'services' : 'reminders';
       const idx = data[key].findIndex(x => x.id === r.id);
       if (idx < 0) data[key].push(r); else data[key][idx] = r;
-      persist();
+      const documents = type === 'service' ? editorDocuments.filter(doc => doc.blob).map(doc => ({...doc, serviceId: r.id})) : [];
+      if (!await persist({documents})) return;
       show(type === 'service' && returnTab === 'serviceDetail' ? 'serviceDetail' : type === 'service' ? 'history' : 'schedule');
       toast('Saved successfully')
     });
@@ -2534,31 +2944,49 @@
       setTimeout(() => URL.revokeObjectURL(url), 30000)
     }
 
-    $('exportBtn').onclick = () => {
-      download('garage-backup-v3-' + today() + '.json', JSON.stringify({
-        ...data,
-        exportedAt: new Date().toISOString()
-      }, null, 2), 'application/json');
-      toast('Backup prepared - save the file')
+    $('exportBtn').onclick = async () => {
+      if (storageBusy) return;
+      storageLock(true);
+      try {
+        const snapshot = copyData(data);
+        const ids = snapshot.services.flatMap(service => (service.documents || []).map(doc => doc.id));
+        const stored = await readDocuments(ids);
+        const documents = [];
+        // Encode one file at a time to keep temporary memory usage bounded.
+        for (const doc of stored) documents.push(await encodeDocument(doc));
+        const content = JSON.stringify({...snapshot, version: 7, documents, exportedAt: new Date().toISOString()}, null, 2);
+        if (new Blob([content]).size > MAX_BACKUP_BYTES) throw Error('Backup exceeds the 200 MB limit.');
+        download('garage-backup-' + today() + '.json', content, 'application/json');
+        toast('Backup prepared with all documents - save the file');
+      } catch (error) {
+        toast('Export failed: ' + error.message);
+      } finally {
+        storageLock(false);
+      }
     };
     $('importBtn').onclick = () => $('importFile').click();
     $('importFile').addEventListener('change', async e => {
       const file = e.target.files?.[0];
-      if (!file) return;
+      if (!file || storageBusy) return;
+      storageLock(true);
       try {
-        if (file.size > 5_000_000) throw Error('File too large');
+        if (file.size > MAX_BACKUP_BYTES) throw Error('Backup exceeds the 200 MB limit.');
         const incoming = JSON.parse(await file.text());
         if (!valid(incoming)) throw Error('Not a valid Garage backup');
-        askConfirm('This will replace your existing records. Export your current data first.', () => {
-          data = migrate(incoming);
-          persist();
+        const documents = await decodeBackupDocuments(incoming);
+        if (documents.length && !database) throw Error('Document storage is unavailable in this browser.');
+        const next = migrate(incoming);
+        askConfirm('This will replace your existing records and documents. Export your current data first.', async () => {
+          data = next;
+          if (!await persist({documents, replaceDocuments: true})) return;
           show('dashboard');
-          toast('Backup imported')
-        }, {title: 'Replace all records?', button: 'Import'})
-      } catch (err) {
-        alert('Import failed: ' + err.message)
+          toast('Backup imported with all documents');
+        }, {title: 'Replace all records?', button: 'Import'});
+      } catch (error) {
+        toast('Import failed: ' + error.message);
       } finally {
-        e.target.value = ''
+        e.target.value = '';
+        storageLock(false);
       }
     });
     $('exportCsv').onclick = () => {
@@ -2568,13 +2996,14 @@
       toast('CSV prepared')
     };
     $('clearBtn').onclick = () => {
-      askConfirm('This permanently removes your vehicle, odometer history, service history and reminders from this browser. Export a JSON backup first.', () => {
+      askConfirm('This permanently removes your vehicle, odometer history, service history, reminders and documents from this browser. Export a JSON backup first.', async () => {
         data = blank();
-        persist();
+        if (!await persist({replaceDocuments: true})) return;
         show('dashboard');
         toast('Local data erased')
       }, {title: 'Erase all local data?', button: 'Erase everything'})
     };
+    const storageReady = initializeStorage();
     show('dashboard')
   })();
 </script>

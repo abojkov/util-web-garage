@@ -1,0 +1,10 @@
+{
+  "name": "garage-maintenance-tracker",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs alex-compressor-util/tests/*.test.cjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  }
+}
