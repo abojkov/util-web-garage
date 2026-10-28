@@ -70,7 +70,8 @@ Record-only backups remain importable. Older attachment compression formats
 are rejected. Restoring a backup with no attachments removes existing documents. New backups include
 an updated internal format identifier so older app versions cannot silently
 import records while losing their files. Backup filenames use
-garage-backup-YYYY-MM-DD.json.
+garage-bckp-YYYYMMDD-HHmm.json, using the device's local date and time at export
+(24-hour hours and minutes).
 
 CSV exports contain service data, workshop services and other costs, but do not
 contain attached documents. Use JSON for a complete backup.

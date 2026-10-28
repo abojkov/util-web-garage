@@ -2954,9 +2954,12 @@
         const documents = [];
         // Encode one file at a time to keep temporary memory usage bounded.
         for (const doc of stored) documents.push(await encodeDocument(doc));
-        const content = JSON.stringify({...snapshot, version: 7, documents, exportedAt: new Date().toISOString()}, null, 2);
+        const exportedAt = new Date();
+        const pad = value => String(value).padStart(2, '0');
+        const timestamp = String(exportedAt.getFullYear()).padStart(4, '0') + pad(exportedAt.getMonth() + 1) + pad(exportedAt.getDate()) + '-' + pad(exportedAt.getHours()) + pad(exportedAt.getMinutes());
+        const content = JSON.stringify({...snapshot, version: 7, documents, exportedAt: exportedAt.toISOString()}, null, 2);
         if (new Blob([content]).size > MAX_BACKUP_BYTES) throw Error('Backup exceeds the 200 MB limit.');
-        download('garage-backup-' + today() + '.json', content, 'application/json');
+        download('garage-bckp-' + timestamp + '.json', content, 'application/json');
         toast('Backup prepared with all documents - save the file');
       } catch (error) {
         toast('Export failed: ' + error.message);
