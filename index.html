@@ -296,11 +296,11 @@
       margin-bottom: 16px;
     }
 
-    #settings .panel {
+    #settings .panel, #odometer .panel {
       padding: 22px 20px;
     }
 
-    #settings .panel + .panel {
+    #settings .panel + .panel, #odometer .panel + .panel {
       margin-top: 20px;
     }
 
@@ -359,7 +359,7 @@
         padding: 0;
       }
 
-      #settings .panel {
+      #settings .panel, #odometer .panel {
         padding: 20px 17px;
       }
     }
@@ -1011,11 +1011,11 @@
       margin: 0 0 20px !important
     }
 
-    #settings .panel {
+    #settings .panel, #odometer .panel {
       padding: 22px 20px
     }
 
-    #settings .panel .section-title {
+    #settings .panel .section-title, #odometer .panel .section-title {
       margin: 0 0 20px !important
     }
 
@@ -1168,7 +1168,7 @@
         padding: 20px 18px
       }
 
-      #editor > .panel, #settings .panel {
+      #editor > .panel, #settings .panel, #odometer .panel {
         padding: 22px 18px
       }
 
@@ -1599,6 +1599,28 @@
       <div id="scheduleList"></div>
     </div>
   </section>
+  <section id="odometer" class="tab hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button class="mini-btn" data-tab="settings">← Back</button>
+      <div class="section-title">Odometer history</div>
+    </div>
+    <div class="panel mb-3">
+      <form id="odoForm">
+        <input id="odoId" type="hidden">
+        <div class="row g-2">
+          <div class="col-6 mb-3"><label class="form-label" for="odoDate">Reading date</label><input
+              class="form-control" id="odoDate" type="date" required></div>
+          <div class="col-6 mb-3"><label class="form-label" for="odoKm">Odometer (km)</label><input
+              class="form-control" id="odoKm" inputmode="decimal" placeholder="125000" required></div>
+        </div>
+        <button class="btn-mint w-100" id="odoSubmit" type="submit">Add odometer reading</button>
+        <button class="btn-outline-custom hidden" id="odoCancel" type="button">Cancel edit</button>
+      </form>
+    </div>
+    <div class="panel">
+      <div id="odoList"></div>
+    </div>
+  </section>
   <section id="categories" class="tab hidden">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <button class="mini-btn" data-tab="settings">← Back</button>
@@ -1662,20 +1684,9 @@
       <button class="btn-outline-custom w-100" data-tab="categories">View category guide</button>
     </div>
     <div class="panel mb-3">
-      <div class="section-title mb-3">Odometer history</div>
-      <form id="odoForm">
-        <input id="odoId" type="hidden">
-        <div class="row g-2">
-          <div class="col-6 mb-3"><label class="form-label" for="odoDate">Reading date</label><input
-              class="form-control" id="odoDate" type="date" required></div>
-          <div class="col-6 mb-3"><label class="form-label" for="odoKm">Odometer (km)</label><input
-              class="form-control" id="odoKm" inputmode="decimal" placeholder="125000" required></div>
-        </div>
-        <button class="btn-mint w-100" id="odoSubmit" type="submit">Add odometer reading</button>
-        <button class="btn-outline-custom hidden" id="odoCancel" type="button">Cancel edit</button>
-      </form>
-      <div class="divider"></div>
-      <div id="odoList"></div>
+      <div class="section-title mb-2">Odometer</div>
+      <p class="hint" id="odoSettingsHint">Track mileage readings used for maintenance reminders.</p>
+      <button class="btn-outline-custom w-100" data-tab="odometer">Manage odometer readings</button>
     </div>
     <div class="panel mb-3">
       <div class="section-title mb-2">Backup your data</div>
@@ -2321,13 +2332,14 @@
       document.querySelectorAll('.tab').forEach(e => e.classList.toggle('hidden', e.id !== t));
       let activeSection = t === 'editor' ? returnTab : t;
       if (activeSection === 'serviceDetail') activeSection = detailReturnTab;
-      if (activeSection === 'categories') activeSection = 'settings';
+      if (activeSection === 'categories' || activeSection === 'odometer') activeSection = 'settings';
       document.querySelectorAll('.primary-nav [data-tab]').forEach(b => {
         const active = b.dataset.tab === activeSection;
         b.classList.toggle('active', active);
         b.setAttribute('aria-current', active ? 'page' : 'false');
       });
       if (t === 'settings') fillVehicle();
+      if (t === 'odometer') resetOdoForm();
       render();
       window.scrollTo(0, 0)
     }
@@ -2619,6 +2631,8 @@
       $('vehiclePlate').setAttribute('aria-label', 'Registration plate: ' + [plateCountry, plateNumber].filter(Boolean).join(' '));
       const latestReading = latestOdo(), odo = latestReading ? parseNum(latestReading.km) : null;
       $('odoStat').textContent = odo === null ? '-' : num(odo) + ' km';
+      const odoCount = (data.odometerReadings || []).length;
+      $('odoSettingsHint').textContent = odoCount ? `${odoCount} reading${odoCount === 1 ? '' : 's'} recorded.` : 'No readings yet. Add your current mileage.';
       $('spendStat').textContent = money(data.services.reduce((sum, s) => sum + serviceTotal(s), 0));
       const sorted = [...data.services].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       const reminders = [...data.reminders].sort((a, b) => {
@@ -2643,7 +2657,6 @@
       $('carPlateCountry').value = v.plateCountry || '';
       $('carPlate').value = v.plate || '';
       $('carVin').value = v.vin || '';
-      resetOdoForm()
     }
 
     let editorParts = [], editorWorkshops = [], editorOtherCosts = [];
