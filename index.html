@@ -230,6 +230,13 @@
       color: var(--muted)
     }
 
+    .app-version {
+      color: var(--muted);
+      font-size: 11px;
+      margin: 10px 0 0;
+      opacity: .75
+    }
+
     .toastline {
       position: fixed;
       bottom: 18px;
@@ -1701,7 +1708,8 @@
       <div class="divider"></div>
       <button id="clearBtn" class="mini-btn danger">Erase all local data</button>
     </div>
-    <p class="hint text-center">Works offline · No accounts · No server · Decimal comma supported</p></section>
+    <p class="hint text-center">Works offline · No accounts · No server · Decimal comma supported</p>
+    <p class="app-version text-center" id="appVersion"></p></section>
   <section id="editor" class="tab hidden">
     <div class="editor-actions">
       <button id="backBtn" class="mini-btn">← Back</button>
@@ -1788,6 +1796,7 @@
   </div>
 </div>
 <div id="toast" class="toastline hidden" role="status"></div>
+<script src="version.js"></script>
 <script src="alex-compressor-util/compressor.js"></script>
 <script>
   (() => {
@@ -3019,6 +3028,7 @@
         toast('Local data erased')
       }, {title: 'Erase all local data?', button: 'Erase everything'})
     };
+    $('appVersion').textContent = 'Garage v' + GARAGE_VERSION;
     const storageReady = initializeStorage();
     show('dashboard')
   })();

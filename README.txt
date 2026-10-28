@@ -1,8 +1,8 @@
 GARAGE — Offline Car Maintenance Tracker
 
 Open the website in a modern browser, or open index.html in a browser that
-supports local JavaScript and browser storage. Keep bootstrap.min.css, logo.png
-and the complete alex-compressor-util/ folder beside index.html. Serve over
+supports local JavaScript and browser storage. Keep bootstrap.min.css, logo.png,
+version.js and the complete alex-compressor-util/ folder beside index.html. Serve over
 HTTP(S) for PDF compression.
 
 Records and attached documents are saved in IndexedDB in the current browser.
