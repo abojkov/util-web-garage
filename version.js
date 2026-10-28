@@ -1,1 +1,1 @@
-var GARAGE_VERSION = '1.1';
+var GARAGE_VERSION = '1.2';
